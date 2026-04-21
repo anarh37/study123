@@ -302,15 +302,15 @@ export default function DailyPlanner({ dailyPlans, setDailyPlans, userProfile, f
                     )}
                 </div>
                 
-                <div className="flex gap-3 bg-slate-50 p-3 rounded-2xl border-2 border-slate-100 focus-within:border-emerald-400 transition-all">
+                <div className="flex flex-col sm:flex-row gap-3 bg-slate-50 p-3 rounded-2xl border-2 border-slate-100 focus-within:border-emerald-400 transition-all">
                     <input 
                         value={nt} 
                         onChange={e=>setNt(e.target.value)} 
                         onKeyDown={e=>e.key==='Enter' && add()} 
-                        className="flex-1 bg-transparent px-4 py-2 outline-none font-bold text-slate-700" 
-                        placeholder="이곳에 추가하고 싶은 할 일을 직접 적어보세요."
+                        className="flex-1 min-w-0 bg-transparent px-2 sm:px-4 py-2 outline-none font-bold text-slate-700" 
+                        placeholder="추가하고 싶은 할 일을 적어보세요."
                     />
-                    <button onClick={add} className="bg-emerald-500 text-white px-8 py-3 rounded-xl font-black shadow-lg hover:bg-emerald-600 active:scale-95 transition-all flex items-center gap-2 shrink-0">
+                    <button onClick={add} className="bg-emerald-500 text-white px-6 sm:px-8 py-3 rounded-xl font-black shadow-lg hover:bg-emerald-600 active:scale-95 transition-all flex items-center justify-center gap-2 shrink-0">
                         <PlusCircle size={20}/> 추가
                     </button>
                 </div>

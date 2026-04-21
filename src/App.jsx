@@ -218,7 +218,7 @@ function MainApp() {
 
             <main className="max-w-7xl mx-auto py-8 px-4">
                 {page === 'goals' && <GoalSetting goals={goals} setGoals={setGoals} fixedSchedule={fixedSchedule} goldenTime={goldenTime} />}
-                {page === 'timetable' && <Timetable fixedSchedule={fixedSchedule} setFixedSchedule={setFixedSchedule} goldenTime={goldenTime} setGoldenTime={setGoldenTime} dailyPlans={dailyPlans} setDailyPlans={setDailyPlans} />}
+                {page === 'timetable' && <Timetable fixedSchedule={fixedSchedule} setFixedSchedule={setFixedSchedule} goldenTime={goldenTime} setGoldenTime={setGoldenTime} dailyPlans={dailyPlans} setDailyPlans={setDailyPlans} weeklyTasks={weeklyTasks} taskMatrix={taskMatrix} />}
                 {page === 'taskManager' && <WeeklyTaskManager weeklyTasks={weeklyTasks} setWeeklyTasks={setWeeklyTasks} taskMatrix={taskMatrix} setTaskMatrix={setTaskMatrix} onAutoSchedule={handleAutoSchedule} />}
                 {page === 'planner' && <DailyPlanner dailyPlans={dailyPlans} setDailyPlans={setDailyPlans} userProfile={userProfile} />}
                 {page === 'reflection' && <ReflectionJournal dailyPlans={dailyPlans} setDailyPlans={setDailyPlans} />}

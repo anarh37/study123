@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Zap, LayoutList, Trash2, Bot, PenLine, Clock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Zap, LayoutList, Trash2, Bot, PenLine, Clock, Star, Lightbulb, Gamepad2, ListChecks } from 'lucide-react';
 import { addDays, getStartOfWeek, getTodayDateString, DAYS, TIME_SLOTS, SCHEDULE_CATEGORIES } from '../utils/constants';
 import { useApp } from '../App';
 
-export default function Timetable({ fixedSchedule, setFixedSchedule, goldenTime, setGoldenTime, dailyPlans, setDailyPlans }) {
+export default function Timetable({ fixedSchedule, setFixedSchedule, goldenTime, setGoldenTime, dailyPlans, setDailyPlans, weeklyTasks, taskMatrix }) {
     const { showToast } = useApp();
     const [currentWeekStart, setCurrentWeekStart] = useState(getStartOfWeek());
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -405,28 +405,79 @@ export default function Timetable({ fixedSchedule, setFixedSchedule, goldenTime,
                 </div>
             )}
 
-            {/* 수동 과제 입력 모달 */}
+            {/* 수동 과제 입력 모달 (기존 과제 목록 선택 + 직접 입력) */}
             {manualTaskModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => { setManualTaskModal(null); setManualTaskName(''); setSelectedCells(new Set()); setSelectionStart(null); setSelectionEnd(null); }}>
-                    <div className="bg-white p-8 rounded-[32px] shadow-2xl animate-fade-in max-w-sm w-full mx-auto border-t-8 border-emerald-400" onClick={e=>e.stopPropagation()}>
+                    <div className="bg-white p-8 rounded-[32px] shadow-2xl animate-fade-in max-w-md w-full mx-auto border-t-8 border-emerald-400 max-h-[85vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
                         <div className="flex items-center gap-3 mb-2">
                             <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center">
                                 <PenLine className="text-emerald-600" size={24}/>
                             </div>
-                            <h3 className="text-xl font-black text-slate-800">과제 직접 배치 📝</h3>
+                            <h3 className="text-xl font-black text-slate-800">과제 배치하기 📝</h3>
                         </div>
-                        <p className="text-slate-500 text-sm font-bold mb-6 mt-3">
-                            선택한 <strong className="text-emerald-600">{manualTaskModal.cells.size}칸 ({manualTaskModal.cells.size * 30}분)</strong>에<br/>
-                            어떤 과제를 넣을까요?
+                        <p className="text-slate-500 text-sm font-bold mb-5 mt-3">
+                            선택한 <strong className="text-emerald-600">{manualTaskModal.cells.size}칸 ({manualTaskModal.cells.size * 30}분)</strong>에 배치할 과제를 선택하세요.
                         </p>
+
+                        {/* 기존 과제 목록에서 선택 */}
+                        {weeklyTasks && weeklyTasks.length > 0 && (
+                            <div className="mb-5">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <ListChecks size={16} className="text-emerald-600"/>
+                                    <span className="text-sm font-black text-slate-700">과제 정리 목록에서 선택</span>
+                                </div>
+                                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                                    {(() => {
+                                        const qIcons = {
+                                            urgentImportant: { icon: <Zap size={12}/>, label: '🔥 1순위', color: 'border-red-300 bg-red-50 hover:bg-red-100' },
+                                            notUrgentImportant: { icon: <Star size={12}/>, label: '⭐ 2순위', color: 'border-blue-300 bg-blue-50 hover:bg-blue-100' },
+                                            urgentNotImportant: { icon: <Lightbulb size={12}/>, label: '📢 3순위', color: 'border-amber-300 bg-amber-50 hover:bg-amber-100' },
+                                            notUrgentNotImportant: { icon: <Gamepad2 size={12}/>, label: '☁️ 4순위', color: 'border-slate-200 bg-slate-50 hover:bg-slate-100' }
+                                        };
+                                        const items = [];
+                                        Object.entries(taskMatrix || {}).forEach(([key, taskIds]) => {
+                                            (taskIds || []).forEach(tid => {
+                                                const task = weeklyTasks.find(t => t.id === tid);
+                                                if (task) items.push({ ...task, priorityKey: key });
+                                            });
+                                        });
+                                        return items.map(task => {
+                                            const q = qIcons[task.priorityKey] || qIcons.notUrgentNotImportant;
+                                            const isSelected = manualTaskName === task.content;
+                                            return (
+                                                <button
+                                                    key={task.id}
+                                                    onClick={() => setManualTaskName(task.content)}
+                                                    className={`w-full text-left p-3 rounded-2xl border-2 transition-all flex items-center gap-3 ${isSelected ? 'border-emerald-500 bg-emerald-50 shadow-md scale-[1.02]' : q.color}`}
+                                                >
+                                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${isSelected ? 'bg-emerald-500 text-white' : 'bg-white text-slate-400 shadow-sm'}`}>
+                                                        {isSelected ? <PenLine size={14}/> : q.icon}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className={`text-sm font-black truncate ${isSelected ? 'text-emerald-700' : 'text-slate-700'}`}>{task.content}</p>
+                                                        <p className="text-[10px] font-bold text-slate-400">{q.label} · {task.duration}분 · 마감 {(task.deadline || '').slice(5).replace('-', '/')}</p>
+                                                    </div>
+                                                </button>
+                                            );
+                                        });
+                                    })()}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 직접 입력 구분선 */}
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="flex-1 border-t border-slate-200"></div>
+                            <span className="text-xs font-bold text-slate-400">또는 직접 입력</span>
+                            <div className="flex-1 border-t border-slate-200"></div>
+                        </div>
                         <input
                             type="text"
                             value={manualTaskName}
                             onChange={e => setManualTaskName(e.target.value)}
                             onKeyDown={e => e.key === 'Enter' && confirmManualTask()}
-                            className="w-full bg-emerald-50 text-lg font-black text-slate-800 rounded-2xl py-4 px-5 outline-none border-2 border-transparent focus:border-emerald-400 transition shadow-sm mb-6"
-                            placeholder="예: 수학 문제집 풀기"
-                            autoFocus
+                            className="w-full bg-emerald-50 text-base font-black text-slate-800 rounded-2xl py-3 px-5 outline-none border-2 border-transparent focus:border-emerald-400 transition shadow-sm mb-5"
+                            placeholder="과제명을 직접 입력하세요"
                         />
                         <div className="flex gap-3">
                             <button onClick={() => { setManualTaskModal(null); setManualTaskName(''); setSelectedCells(new Set()); setSelectionStart(null); setSelectionEnd(null); }} className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black hover:bg-slate-200 transition-all">

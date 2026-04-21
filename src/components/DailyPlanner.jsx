@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { CheckCircle2, CheckCircle, PlusCircle, Trash2, ArrowRightCircle, XCircle, Clock, Zap, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, CheckCircle, PlusCircle, Trash2, ArrowRightCircle, XCircle, Clock, Zap, AlertTriangle, Pencil } from 'lucide-react';
 import { getTodayDateString, addDays, DAYS, TIME_SLOTS } from '../utils/constants';
 import { useApp } from '../App';
 import PomodoroTimer from './PomodoroTimer';
@@ -15,6 +15,37 @@ export default function DailyPlanner({ dailyPlans, setDailyPlans, userProfile, f
     // 완료 시간 입력 모달 상태
     const [completionModal, setCompletionModal] = useState(null); // { id, task, defaultDuration }
     const [actualMinutes, setActualMinutes] = useState('');
+
+    // 과제 수정 모달 상태
+    const [editModal, setEditModal] = useState(null); // { id, task, duration }
+    const [editTaskName, setEditTaskName] = useState('');
+    const [editDuration, setEditDuration] = useState('');
+
+    // 수정 모달 열기
+    const openEditModal = (task) => {
+        setEditModal({ id: task.id });
+        setEditTaskName(task.task);
+        setEditDuration(String(task.duration));
+    };
+
+    // 수정 확정
+    const confirmEdit = () => {
+        const newDuration = parseInt(editDuration, 10) || 0;
+        if (!editTaskName.trim()) { showToast('과제명을 입력해 주세요!', 'error'); return; }
+        if (newDuration <= 0) { showToast('1분 이상 입력해 주세요!', 'error'); return; }
+
+        setDailyPlans(prev => {
+            const next = JSON.parse(JSON.stringify(prev));
+            const idx = next[today].todos.findIndex(t => t.id === editModal.id);
+            if (idx !== -1) {
+                next[today].todos[idx].task = editTaskName.trim();
+                next[today].todos[idx].duration = newDuration;
+            }
+            return next;
+        });
+        showToast('과제가 수정되었어요! ✏️', 'success');
+        setEditModal(null);
+    };
 
     const add = () => {
         if(!nt.trim()) return;
@@ -233,6 +264,7 @@ export default function DailyPlanner({ dailyPlans, setDailyPlans, userProfile, f
                                     {t.status === 'failed' && <span className="text-xs font-bold text-red-400 mt-1">오늘은 실천하지 못했습니다.</span>}
                                     {t.status === 'done' && <span className="text-xs font-bold text-emerald-500 mt-1">✅ {t.duration}분 동안 완료했어요!</span>}
                                     {t.startTime && t.status === 'pending' && <span className="text-xs font-bold text-slate-400 mt-1">🕒 {t.startTime} 시작 · {t.duration}분</span>}
+                                    {!t.startTime && t.status === 'pending' && <span className="text-xs font-bold text-slate-400 mt-1">⏱ 예상 {t.duration}분</span>}
                                 </div>
                                 <div className="flex flex-wrap gap-2">
                                     {/* 컨트롤 패널 */}
@@ -249,6 +281,11 @@ export default function DailyPlanner({ dailyPlans, setDailyPlans, userProfile, f
                                     {t.status !== 'failed' && (
                                         <button onClick={()=>updateStatus(t.id, 'failed')} className="flex items-center gap-1 px-2 py-2 bg-white text-slate-400 hover:bg-slate-500 hover:text-white transition-all rounded-xl border border-slate-100 shadow-sm font-bold text-sm">
                                             <XCircle size={18}/> 못함
+                                        </button>
+                                    )}
+                                    {t.status === 'pending' && (
+                                        <button onClick={()=>openEditModal(t)} className="flex items-center gap-1 px-2 py-2 bg-white text-violet-400 hover:bg-violet-500 hover:text-white transition-all rounded-xl border border-violet-100 shadow-sm font-bold text-sm">
+                                            <Pencil size={16}/> 수정
                                         </button>
                                     )}
                                     <button onClick={()=>remove(t.id)} className="p-2 ml-1 bg-white text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all rounded-xl border border-slate-100 shadow-sm">
@@ -323,6 +360,65 @@ export default function DailyPlanner({ dailyPlans, setDailyPlans, userProfile, f
                             </button>
                             <button onClick={confirmCompletion} className="flex-1 py-4 bg-emerald-500 text-white rounded-2xl font-black shadow-lg hover:bg-emerald-600 active:scale-95 transition-all">
                                 완료 기록하기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 과제 수정 모달 */}
+            {editModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setEditModal(null)}>
+                    <div className="bg-white p-8 rounded-[32px] shadow-2xl animate-fade-in max-w-sm w-full mx-auto border-t-8 border-violet-400" onClick={e=>e.stopPropagation()}>
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-12 h-12 bg-violet-100 rounded-2xl flex items-center justify-center">
+                                <Pencil className="text-violet-600" size={24}/>
+                            </div>
+                            <h3 className="text-xl font-black text-slate-800">과제 수정 ✏️</h3>
+                        </div>
+                        
+                        <div className="mt-5 space-y-4">
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 mb-1 block">과제명</label>
+                                <input
+                                    type="text"
+                                    value={editTaskName}
+                                    onChange={e => setEditTaskName(e.target.value)}
+                                    className="w-full bg-slate-50 text-base font-black text-slate-800 rounded-2xl py-3 px-4 outline-none border-2 border-transparent focus:border-violet-400 transition shadow-sm"
+                                    autoFocus
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 mb-1 block">예상 소요시간</label>
+                                <div className="bg-slate-50 rounded-2xl p-3 flex items-center gap-3 border border-slate-100">
+                                    <input
+                                        type="number"
+                                        value={editDuration}
+                                        onChange={e => setEditDuration(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && confirmEdit()}
+                                        className="flex-1 bg-white text-center text-2xl font-black text-slate-800 rounded-xl py-2 outline-none border-2 border-transparent focus:border-violet-400 transition shadow-sm"
+                                        min="1"
+                                        max="300"
+                                    />
+                                    <span className="text-lg font-black text-violet-700 shrink-0">분</span>
+                                </div>
+                            </div>
+                            <div className="flex gap-2 text-xs font-bold text-slate-400 justify-center flex-wrap">
+                                {[5, 10, 15, 20, 30, 45, 60].map(m => (
+                                    <button key={m} onClick={() => setEditDuration(String(m))} 
+                                        className={`px-3 py-1.5 rounded-full transition-all ${editDuration === String(m) ? 'bg-violet-500 text-white shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-500'}`}>
+                                        {m}분
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        
+                        <div className="flex gap-3 mt-6">
+                            <button onClick={() => setEditModal(null)} className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black hover:bg-slate-200 transition-all">
+                                취소
+                            </button>
+                            <button onClick={confirmEdit} className="flex-1 py-4 bg-violet-500 text-white rounded-2xl font-black shadow-lg hover:bg-violet-600 active:scale-95 transition-all">
+                                수정 완료
                             </button>
                         </div>
                     </div>

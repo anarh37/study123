@@ -86,8 +86,51 @@ export function runAutoSchedule({
             const dayData = dayMap[ds];
 
             if (dayData && dayData.studied < MAX_STUDY_PER_DAY) {
-                // 이 날짜에서 사용할 슬롯 찾기 (황금시간 우선)
-                const targetSlot = dayData.slots.find(s => s.available > 0 && s.isGolden) || dayData.slots.find(s => s.available > 0);
+                // 1. 해당 날짜에 지정된 황금시간의 인덱스 배열 찾기
+                const goldenIndices = [];
+                dayData.slots.forEach((s, i) => { if (s.isGolden) goldenIndices.push(i); });
+                
+                // 2. 가용한 슬롯들의 우선순위 점수 계산 (가장 점수가 높은 슬롯 선택)
+                let bestSlot = null;
+                let bestScore = -1;
+
+                dayData.slots.forEach((s, idx) => {
+                    if (s.available <= 0) return; // 배치 불가 슬롯 패스
+
+                    let score = 0;
+                    
+                    if (s.isGolden) {
+                        score = 100; // 1순위: 황금시간
+                    } else {
+                        // 기본 점수: 시간대 판별
+                        const hour = parseInt(s.time.split(':')[0], 10);
+                        if (hour >= 6 && hour < 12) {
+                            score = 0; // 4순위: 아침 시간대 (가장 힘든 시간, 최후순위)
+                        } else {
+                            score = 20; // 3순위: 그 외 일반 시간대 (점심~밤)
+                        }
+
+                        // 2순위: 황금시간 근접도 보너스 (집중하는 김에 이어서 배치)
+                        if (goldenIndices.length > 0) {
+                            let minDistance = 999;
+                            goldenIndices.forEach(gIdx => {
+                                const dist = Math.abs(idx - gIdx);
+                                if (dist < minDistance) minDistance = dist;
+                            });
+                            
+                            // 거리 1(30분)당 -2점씩, 최고 50점 보너스 (가까울수록 높음)
+                            const proximityBonus = Math.max(0, 50 - (minDistance * 2));
+                            score += proximityBonus;
+                        }
+                    }
+
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestSlot = s;
+                    }
+                });
+
+                const targetSlot = bestSlot;
                 
                 if (targetSlot) {
                     const canPlace = Math.min(task.remaining, targetSlot.available, MAX_STUDY_PER_DAY - dayData.studied, POMODORO);

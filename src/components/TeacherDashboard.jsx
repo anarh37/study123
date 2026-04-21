@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '../firebase';
-import { collection, query, onSnapshot, getDoc, doc } from 'firebase/firestore';
-import { Users, FileText, Activity, PieChart, CheckCircle2, TrendingUp, AlertTriangle, ChevronRight, Trophy } from 'lucide-react';
+import { collection, query, onSnapshot, getDoc, doc, deleteDoc, setDoc } from 'firebase/firestore';
+import { Users, FileText, Activity, PieChart, CheckCircle2, TrendingUp, AlertTriangle, ChevronRight, Trophy, RefreshCcw } from 'lucide-react';
 
 export default function TeacherDashboard() {
     const [students, setStudents] = useState([]);
@@ -14,11 +14,48 @@ export default function TeacherDashboard() {
         const q = query(collection(db, 'users'));
         const unsubscribe = onSnapshot(q, (snap) => {
             const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            // 이메일이나 이름이 있는 유저만 필터 (admin 본인 제외 가능하나 일단 다 보여줌)
             setStudents(list);
         });
         return () => unsubscribe();
     }, []);
+
+    // 일괄 초기화 기능 (주간 시간표 제외)
+    const handleResetAllData = async () => {
+        if (!window.confirm("경고: 전체 학생들의 '주간 시간표'를 제외한 모든 데이터(목표, 과제, 일지, 누적 시간)를 0으로 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다!")) return;
+        
+        try {
+            setLoadingData(true);
+            const collectionsToDelete = [
+                'stepsPlannerGoals',
+                'stepsPlannerWeeklyTasks',
+                'stepsPlannerTaskMatrix',
+                'stepsPlannerDailyPlans'
+            ];
+
+            let count = 0;
+            for (const student of students) {
+                // 특정 데이터를 제외한 나머지 데이터 문서를 삭제합니다.
+                for (const colName of collectionsToDelete) {
+                    await deleteDoc(doc(db, 'users', student.id, 'plannerData', colName));
+                }
+                // 리더보드 점수 초기화
+                await setDoc(doc(db, 'leaderboard', student.id), {
+                    totalStudyTime: 0,
+                    lastActive: Date.now()
+                }, { merge: true });
+                count++;
+            }
+            alert(`총 ${count}명의 학생 데이터(시간표 제외)가 초기화되었습니다.`);
+        } catch(e) {
+            console.error("초기화 실패:", e);
+            alert("초기화 중 오류가 발생했습니다: " + e.message);
+        } finally {
+            setLoadingData(false);
+            if(selectedStudent) {
+                setSelectedStudent({...selectedStudent}); // 강제 리렌더링 트리거
+            }
+        }
+    };
 
     // Fetch details when a student is selected
     useEffect(() => {
@@ -86,10 +123,18 @@ export default function TeacherDashboard() {
                     <div className="w-12 h-12 bg-rose-100 text-rose-500 rounded-2xl flex items-center justify-center">
                         <Users size={24} />
                     </div>
-                    <div>
+                    <div className="flex-1">
                         <h2 className="text-2xl font-black text-slate-800 tracking-tight">클래스 보드</h2>
                         <p className="text-sm font-bold text-slate-400">전체 학생 명단</p>
                     </div>
+                    <button 
+                        onClick={handleResetAllData} 
+                        className="flex flex-col items-center justify-center p-2 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-600 transition-all border border-red-200 shadow-sm"
+                        title="전체 데이터 초기화 (시간표 제외)"
+                    >
+                        <RefreshCcw size={18} className="mb-1" />
+                        <span className="text-[10px] font-black leading-none whitespace-nowrap">데이터 초기화</span>
+                    </button>
                 </div>
                 
                 <div className="flex-1 overflow-y-auto space-y-2 no-scrollbar">

@@ -89,69 +89,76 @@ export function runAutoSchedule({
                 // 1. 해당 날짜에 지정된 황금시간의 인덱스 배열 찾기
                 const goldenIndices = [];
                 dayData.slots.forEach((s, i) => { if (s.isGolden) goldenIndices.push(i); });
+
+                // 같은 날 안에서 빈 슬롯이 남아있는 한 계속 채우기 (집중 시간 몰아주기)
+                let placedThisRound = true;
+                while (placedThisRound && task.remaining > 0 && dayData.studied < MAX_STUDY_PER_DAY) {
+                    placedThisRound = false;
                 
-                // 2. 가용한 슬롯들의 우선순위 점수 계산 (가장 점수가 높은 슬롯 선택)
-                let bestSlot = null;
-                let bestScore = -1;
+                    // 2. 가용한 슬롯들의 우선순위 점수 계산 (가장 점수가 높은 슬롯 선택)
+                    let bestSlot = null;
+                    let bestScore = -1;
 
-                dayData.slots.forEach((s, idx) => {
-                    if (s.available <= 0) return; // 배치 불가 슬롯 패스
+                    dayData.slots.forEach((s, idx) => {
+                        if (s.available <= 0) return; // 배치 불가 슬롯 패스
 
-                    let score = 0;
-                    
-                    if (s.isGolden) {
-                        score = 100; // 1순위: 황금시간
-                    } else {
-                        // 기본 점수: 시간대 판별
-                        const hour = parseInt(s.time.split(':')[0], 10);
-                        if (hour >= 6 && hour < 12) {
-                            score = 0; // 4순위: 아침 시간대 (가장 힘든 시간, 최후순위)
+                        let score = 0;
+                        
+                        if (s.isGolden) {
+                            score = 100; // 1순위: 황금시간
                         } else {
-                            score = 20; // 3순위: 그 외 일반 시간대 (점심~밤)
+                            // 기본 점수: 시간대 판별
+                            const hour = parseInt(s.time.split(':')[0], 10);
+                            if (hour >= 6 && hour < 12) {
+                                score = 0; // 4순위: 아침 시간대 (가장 힘든 시간, 최후순위)
+                            } else {
+                                score = 20; // 3순위: 그 외 일반 시간대 (점심~밤)
+                            }
+
+                            // 2순위: 황금시간 근접도 보너스 (집중하는 김에 이어서 배치)
+                            if (goldenIndices.length > 0) {
+                                let minDistance = 999;
+                                goldenIndices.forEach(gIdx => {
+                                    const dist = Math.abs(idx - gIdx);
+                                    if (dist < minDistance) minDistance = dist;
+                                });
+                                
+                                // 거리 1(30분)당 -2점씩, 최고 50점 보너스 (가까울수록 높음)
+                                const proximityBonus = Math.max(0, 50 - (minDistance * 2));
+                                score += proximityBonus;
+                            }
                         }
 
-                        // 2순위: 황금시간 근접도 보너스 (집중하는 김에 이어서 배치)
-                        if (goldenIndices.length > 0) {
-                            let minDistance = 999;
-                            goldenIndices.forEach(gIdx => {
-                                const dist = Math.abs(idx - gIdx);
-                                if (dist < minDistance) minDistance = dist;
-                            });
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestSlot = s;
+                        }
+                    });
+
+                    const targetSlot = bestSlot;
+                    
+                    if (targetSlot) {
+                        const canPlace = Math.min(task.remaining, targetSlot.available, MAX_STUDY_PER_DAY - dayData.studied, POMODORO);
+                        if (canPlace > 0) {
+                            const newTodo = {
+                                id: `ai-${task.id}-${ds}-${targetSlot.time}`,
+                                task: task.content,
+                                startTime: targetSlot.time,
+                                duration: canPlace,
+                                status: 'pending',
+                                aiScheduled: true,
+                                originTaskId: task.id,
+                                priority: task.priorityKey
+                            };
                             
-                            // 거리 1(30분)당 -2점씩, 최고 50점 보너스 (가까울수록 높음)
-                            const proximityBonus = Math.max(0, 50 - (minDistance * 2));
-                            score += proximityBonus;
+                            targetSlot.available -= canPlace;
+                            dayData.studied += canPlace;
+                            task.remaining -= canPlace;
+                            placedThisRound = true;
+                            
+                            if (!newPlans[ds]) newPlans[ds] = { todos: [], checklist: [false, false, false], reflection: {} };
+                            newPlans[ds].todos.push(newTodo);
                         }
-                    }
-
-                    if (score > bestScore) {
-                        bestScore = score;
-                        bestSlot = s;
-                    }
-                });
-
-                const targetSlot = bestSlot;
-                
-                if (targetSlot) {
-                    const canPlace = Math.min(task.remaining, targetSlot.available, MAX_STUDY_PER_DAY - dayData.studied, POMODORO);
-                    if (canPlace > 0) {
-                        const newTodo = {
-                            id: `ai-${task.id}-${ds}-${targetSlot.time}`,
-                            task: task.content, // task.task in DailyPlanner mapped to task.content from WeeklyTaskManager
-                            startTime: targetSlot.time,
-                            duration: canPlace,
-                            status: 'pending',
-                            aiScheduled: true,
-                            originTaskId: task.id,
-                            priority: task.priorityKey
-                        };
-                        
-                        targetSlot.available -= canPlace;
-                        dayData.studied += canPlace;
-                        task.remaining -= canPlace;
-                        
-                        if (!newPlans[ds]) newPlans[ds] = { todos: [], checklist: [false, false, false], reflection: {} };
-                        newPlans[ds].todos.push(newTodo);
                     }
                 }
             }

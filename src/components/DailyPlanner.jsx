@@ -99,6 +99,10 @@ export default function DailyPlanner({ dailyPlans, setDailyPlans, userProfile, f
 
     // 상태 변경 이벤트 (postponed / failed)
     const updateStatus = (id, newStatus) => {
+        const taskObjToUpdate = todos.find(t => t.id === id);
+        if (!taskObjToUpdate) return;
+        const oldStatus = taskObjToUpdate.status;
+
         setDailyPlans(prev => {
             const next = JSON.parse(JSON.stringify(prev));
             const targetIndex = next[today].todos.findIndex(t => t.id === id);
@@ -131,16 +135,43 @@ export default function DailyPlanner({ dailyPlans, setDailyPlans, userProfile, f
             return next;
         });
 
+        // "끝냄(done)" 상태였던 과제를 다른 상태로 변경할 경우 누적 활동 시간 차감
+        if (oldStatus === 'done' && newStatus !== 'done') {
+            const user = auth.currentUser;
+            if (user) {
+                const ref = doc(db, 'leaderboard', user.uid);
+                updateDoc(ref, {
+                    totalStudyTime: increment(-taskObjToUpdate.duration),
+                    lastActive: Date.now()
+                }).catch(err => console.error("학습시간 차감 오류:", err));
+            }
+        }
+
         if (newStatus === 'postponed') showToast('일정을 내일로 미뤘습니다. 내일 꼭 해결해 보아요!', 'info');
         if (newStatus === 'failed') showToast('아쉽게 못했군요. 다음엔 꼭 성공하길!', 'error');
     };
 
     const remove = (id) => {
+        const taskToDelete = todos.find(t => t.id === id);
+
         setDailyPlans(prev => {
             const next = JSON.parse(JSON.stringify(prev));
             next[today].todos = next[today].todos.filter(t => t.id !== id);
             return next;
         });
+
+        // "끝냄(done)" 상태의 과제를 삭제하면 우리반 활동 누적 시간 차감
+        if (taskToDelete && taskToDelete.status === 'done') {
+            const user = auth.currentUser;
+            if (user) {
+                const ref = doc(db, 'leaderboard', user.uid);
+                updateDoc(ref, {
+                    totalStudyTime: increment(-taskToDelete.duration),
+                    lastActive: Date.now()
+                }).catch(err => console.error("학습시간 차감 오류:", err));
+                showToast(`완료된 과제가 삭제되어 활동 시간 ${taskToDelete.duration}분이 차감되었어요.`, 'info');
+            }
+        }
     };
 
     // 상태별 스타일 맵

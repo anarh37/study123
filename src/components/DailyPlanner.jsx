@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { CheckCircle2, CheckCircle, PlusCircle, Trash2, ArrowRightCircle, XCircle, Clock } from 'lucide-react';
-import { getTodayDateString, addDays } from '../utils/constants';
+import React, { useState, useMemo } from 'react';
+import { CheckCircle2, CheckCircle, PlusCircle, Trash2, ArrowRightCircle, XCircle, Clock, Zap, AlertTriangle } from 'lucide-react';
+import { getTodayDateString, addDays, DAYS, TIME_SLOTS } from '../utils/constants';
 import { useApp } from '../App';
 import PomodoroTimer from './PomodoroTimer';
 import { doc, updateDoc, increment } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 
-export default function DailyPlanner({ dailyPlans, setDailyPlans, userProfile }) {
+export default function DailyPlanner({ dailyPlans, setDailyPlans, userProfile, fixedSchedule, goldenTime }) {
     const { showToast } = useApp();
     const today = getTodayDateString();
     const [nt, setNt] = useState('');
@@ -119,6 +119,63 @@ export default function DailyPlanner({ dailyPlans, setDailyPlans, userProfile })
         'postponed': { c: 'bg-amber-50 border-amber-300 opacity-70', t: 'text-amber-700 decoration-wavy' },
         'failed': { c: 'bg-red-50 border-red-300 opacity-70', t: 'text-red-700 line-through' }
     };
+    // 오늘의 가용시간 계산
+    const todayTimeInfo = useMemo(() => {
+        const now = new Date();
+        const todayDow = DAYS[now.getDay() === 0 ? 6 : now.getDay() - 1]; // 월~일
+        const sleepConfig = userProfile?.sleep || { start: '22:00', end: '07:00' };
+        const currentHour = now.getHours();
+        const currentMin = now.getMinutes();
+        const nowTime = `${String(currentHour).padStart(2, '0')}:${currentMin < 30 ? '00' : '30'}`;
+
+        let totalAvailableSlots = 0;
+        let remainingAvailableSlots = 0;
+
+        TIME_SLOTS.forEach(time => {
+            const cellId = `${todayDow}-${time}`;
+            // 수면 시간 체크
+            let isSleep = false;
+            if (sleepConfig.start > sleepConfig.end) {
+                if (time >= sleepConfig.start || time < sleepConfig.end) isSleep = true;
+            } else {
+                if (time >= sleepConfig.start && time < sleepConfig.end) isSleep = true;
+            }
+            // 고정 일정 체크 (황금시간은 가용시간에 포함)
+            const isFixed = fixedSchedule?.[cellId] && !(goldenTime || []).includes(cellId);
+            
+            if (!isSleep && !isFixed) {
+                totalAvailableSlots++;
+                // 현재 시각 이후의 남은 슬롯만 카운트
+                if (time >= nowTime) remainingAvailableSlots++;
+            }
+        });
+
+        const totalAvailableMin = totalAvailableSlots * 30;
+        const remainingAvailableMin = remainingAvailableSlots * 30;
+
+        // 오늘 계획된 과제 시간 합산 (pending 상태만)
+        const plannedMin = todos
+            .filter(t => t.status === 'pending')
+            .reduce((sum, t) => sum + (t.duration || 0), 0);
+        
+        // 오늘 완료한 과제 시간 합산
+        const doneMin = todos
+            .filter(t => t.status === 'done')
+            .reduce((sum, t) => sum + (t.duration || 0), 0);
+
+        const freeMin = Math.max(0, remainingAvailableMin - plannedMin);
+        const isOverPlanned = plannedMin > remainingAvailableMin;
+
+        return { totalAvailableMin, remainingAvailableMin, plannedMin, doneMin, freeMin, isOverPlanned };
+    }, [fixedSchedule, goldenTime, userProfile, todos]);
+
+    const formatTime = (min) => {
+        const h = Math.floor(min / 60);
+        const m = min % 60;
+        if (h === 0) return `${m}분`;
+        if (m === 0) return `${h}시간`;
+        return `${h}시간 ${m}분`;
+    };
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in">
@@ -126,7 +183,44 @@ export default function DailyPlanner({ dailyPlans, setDailyPlans, userProfile })
                 <h2 className="text-3xl font-black mb-2 flex items-center gap-3 text-slate-800">
                     <CheckCircle2 className="text-emerald-500" size={36}/> 오늘의 실천 계획
                 </h2>
-                <p className="text-sm font-bold text-slate-400 mb-8">할 일을 마쳤다면 초록색 체크를, 미루고 싶다면 노란색 화살표를 눌러주세요.</p>
+                <p className="text-sm font-bold text-slate-400 mb-6">할 일을 마쳤다면 초록색 체크를, 미루고 싶다면 노란색 화살표를 눌러주세요.</p>
+                
+                {/* 오늘의 가용시간 정보 카드 */}
+                <div className={`p-5 rounded-2xl mb-8 border-2 ${todayTimeInfo.isOverPlanned ? 'bg-red-50 border-red-200' : 'bg-violet-50 border-violet-100'}`}>
+                    <div className="flex items-center gap-2 mb-3">
+                        {todayTimeInfo.isOverPlanned 
+                            ? <AlertTriangle size={18} className="text-red-500"/> 
+                            : <Zap size={18} className="text-violet-600"/>
+                        }
+                        <span className="text-sm font-black text-slate-700">
+                            {todayTimeInfo.isOverPlanned ? '⚠️ 과제가 남은 시간보다 많아요!' : '⚡ 오늘 나의 시간 현황'}
+                        </span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div className="bg-white rounded-xl p-3 text-center shadow-sm">
+                            <p className="text-[10px] font-bold text-slate-400 mb-1">오늘 전체 가용</p>
+                            <p className="text-lg font-black text-slate-700">{formatTime(todayTimeInfo.totalAvailableMin)}</p>
+                        </div>
+                        <div className="bg-white rounded-xl p-3 text-center shadow-sm">
+                            <p className="text-[10px] font-bold text-slate-400 mb-1">지금부터 남은</p>
+                            <p className="text-lg font-black text-violet-600">{formatTime(todayTimeInfo.remainingAvailableMin)}</p>
+                        </div>
+                        <div className="bg-white rounded-xl p-3 text-center shadow-sm">
+                            <p className="text-[10px] font-bold text-slate-400 mb-1">계획된 과제</p>
+                            <p className={`text-lg font-black ${todayTimeInfo.isOverPlanned ? 'text-red-500' : 'text-amber-600'}`}>{formatTime(todayTimeInfo.plannedMin)}</p>
+                        </div>
+                        <div className="bg-white rounded-xl p-3 text-center shadow-sm">
+                            <p className="text-[10px] font-bold text-slate-400 mb-1">✅ 오늘 완료</p>
+                            <p className="text-lg font-black text-emerald-600">{formatTime(todayTimeInfo.doneMin)}</p>
+                        </div>
+                    </div>
+                    {todayTimeInfo.isOverPlanned && (
+                        <p className="text-xs font-bold text-red-500 mt-3 text-center">계획이 남은 가용시간({formatTime(todayTimeInfo.remainingAvailableMin)})보다 {formatTime(todayTimeInfo.plannedMin - todayTimeInfo.remainingAvailableMin)} 초과했어요. 일부를 미루는 것도 방법이에요!</p>
+                    )}
+                    {!todayTimeInfo.isOverPlanned && todayTimeInfo.freeMin > 0 && (
+                        <p className="text-xs font-bold text-violet-500 mt-3 text-center">아직 <strong>{formatTime(todayTimeInfo.freeMin)}</strong>의 여유 시간이 있어요! 💪</p>
+                    )}
+                </div>
                 
                 <div className="space-y-4 mb-10">
                     {todos.map(t => {

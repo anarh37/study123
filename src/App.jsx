@@ -220,7 +220,7 @@ function MainApp() {
                 {page === 'goals' && <GoalSetting goals={goals} setGoals={setGoals} fixedSchedule={fixedSchedule} goldenTime={goldenTime} />}
                 {page === 'timetable' && <Timetable fixedSchedule={fixedSchedule} setFixedSchedule={setFixedSchedule} goldenTime={goldenTime} setGoldenTime={setGoldenTime} dailyPlans={dailyPlans} setDailyPlans={setDailyPlans} weeklyTasks={weeklyTasks} taskMatrix={taskMatrix} />}
                 {page === 'taskManager' && <WeeklyTaskManager weeklyTasks={weeklyTasks} setWeeklyTasks={setWeeklyTasks} taskMatrix={taskMatrix} setTaskMatrix={setTaskMatrix} onAutoSchedule={handleAutoSchedule} />}
-                {page === 'planner' && <DailyPlanner dailyPlans={dailyPlans} setDailyPlans={setDailyPlans} userProfile={userProfile} />}
+                {page === 'planner' && <DailyPlanner dailyPlans={dailyPlans} setDailyPlans={setDailyPlans} userProfile={userProfile} fixedSchedule={fixedSchedule} goldenTime={goldenTime} />}
                 {page === 'reflection' && <ReflectionJournal dailyPlans={dailyPlans} setDailyPlans={setDailyPlans} />}
                 {page === 'dashboard' && <Dashboard dailyPlans={dailyPlans} weeklyTasks={weeklyTasks} goals={goals} />}
                 {page === 'leaderboard' && <ClassBoard />}

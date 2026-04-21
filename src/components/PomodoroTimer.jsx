@@ -18,7 +18,7 @@ export default function PomodoroTimer({ userProfile }) {
                     if (p <= 1) {
                         clearInterval(iv.current); setRun(false);
                         if (mode === 'focus') {
-                            setMode('break'); setLeft(bt);
+                            setMode('break');
                             // Timer finished! Add time to leaderboard database
                             const user = auth.currentUser;
                             if (user) {
@@ -28,10 +28,11 @@ export default function PomodoroTimer({ userProfile }) {
                                     lastActive: Date.now()
                                 }).catch(err => console.error("공부시간 기록 오류:", err));
                             }
+                            return bt;
                         } else { 
-                            setMode('focus'); setLeft(ft); 
+                            setMode('focus'); 
+                            return ft;
                         }
-                        return 0;
                     }
                     return p - 1;
                 });

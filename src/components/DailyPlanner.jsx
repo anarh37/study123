@@ -1,14 +1,20 @@
 import React, { useState } from 'react';
-import { CheckCircle2, CheckCircle, PlusCircle, Trash2, ArrowRightCircle, XCircle } from 'lucide-react';
+import { CheckCircle2, CheckCircle, PlusCircle, Trash2, ArrowRightCircle, XCircle, Clock } from 'lucide-react';
 import { getTodayDateString, addDays } from '../utils/constants';
 import { useApp } from '../App';
 import PomodoroTimer from './PomodoroTimer';
+import { doc, updateDoc, increment } from 'firebase/firestore';
+import { db, auth } from '../firebase';
 
 export default function DailyPlanner({ dailyPlans, setDailyPlans, userProfile }) {
     const { showToast } = useApp();
     const today = getTodayDateString();
     const [nt, setNt] = useState('');
     const todos = dailyPlans[today]?.todos || [];
+
+    // 완료 시간 입력 모달 상태
+    const [completionModal, setCompletionModal] = useState(null); // { id, task, defaultDuration }
+    const [actualMinutes, setActualMinutes] = useState('');
 
     const add = () => {
         if(!nt.trim()) return;
@@ -19,7 +25,48 @@ export default function DailyPlanner({ dailyPlans, setDailyPlans, userProfile })
         setNt('');
     };
 
-    // 상태 변경 이벤트 (pending -> done -> postponed -> failed)
+    // "끝냄" 버튼 클릭 시 → 모달을 열어서 실제 소요 시간을 입력받음
+    const handleDoneClick = (task) => {
+        setCompletionModal({ id: task.id, task: task.task, defaultDuration: task.duration });
+        setActualMinutes(String(task.duration));
+    };
+
+    // 모달에서 "확인" 클릭 → 실제 시간 반영 + 상태 done + 우리반 활동 누적시간 반영
+    const confirmCompletion = () => {
+        const minutes = parseInt(actualMinutes, 10) || 0;
+        if (minutes <= 0) {
+            showToast('1분 이상 입력해 주세요!', 'error');
+            return;
+        }
+
+        const taskId = completionModal.id;
+
+        // 1. 과제 상태를 done으로 변경 + duration을 실제 소요 시간으로 업데이트
+        setDailyPlans(prev => {
+            const next = JSON.parse(JSON.stringify(prev));
+            const targetIndex = next[today].todos.findIndex(t => t.id === taskId);
+            if (targetIndex === -1) return next;
+            next[today].todos[targetIndex].status = 'done';
+            next[today].todos[targetIndex].duration = minutes;
+            return next;
+        });
+
+        // 2. 우리반 활동 누적학습시간(leaderboard)에 반영
+        const user = auth.currentUser;
+        if (user) {
+            const ref = doc(db, 'leaderboard', user.uid);
+            updateDoc(ref, {
+                totalStudyTime: increment(minutes),
+                lastActive: Date.now()
+            }).catch(err => console.error("학습시간 기록 오류:", err));
+        }
+
+        showToast(`${minutes}분 동안 열심히 했어요! 대단해요! 🎉`, 'success');
+        setCompletionModal(null);
+        setActualMinutes('');
+    };
+
+    // 상태 변경 이벤트 (postponed / failed)
     const updateStatus = (id, newStatus) => {
         setDailyPlans(prev => {
             const next = JSON.parse(JSON.stringify(prev));
@@ -34,15 +81,19 @@ export default function DailyPlanner({ dailyPlans, setDailyPlans, userProfile })
                 const tomorrow = addDays(today, 1);
                 if (!next[tomorrow]) next[tomorrow] = { todos: [], checklist: [false,false,false], reflection: {} };
                 
+                // 원본 ID 추출 (postponed- 접두사 체이닝 방지)
+                const originId = taskObj.id.toString().replace(/^(postponed-)+/, '');
+                const postponedId = `postponed-${originId}`;
+                
                 // 내일에 중복 항목이 있는지 확인 후 없으면 추가
-                const isDupe = next[tomorrow].todos.some(t => t.id === `postponed-${taskObj.id}`);
+                const isDupe = next[tomorrow].todos.some(t => t.id === postponedId);
                 if (!isDupe) {
                     next[tomorrow].todos.push({
                         ...taskObj,
-                        id: `postponed-${taskObj.id}`,
+                        id: postponedId,
                         status: 'pending',
                         startTime: null, // 시간 배정은 리셋
-                        task: `${taskObj.task} (어제 밀림)`
+                        task: taskObj.task.replace(/ \(어제 밀림\)$/, '') + ' (어제 밀림)'
                     });
                 }
             }
@@ -50,7 +101,6 @@ export default function DailyPlanner({ dailyPlans, setDailyPlans, userProfile })
         });
 
         if (newStatus === 'postponed') showToast('일정을 내일로 미뤘습니다. 내일 꼭 해결해 보아요!', 'info');
-        if (newStatus === 'done') showToast('과제 하나를 끝냈습니다! 대단해요!', 'success');
         if (newStatus === 'failed') showToast('아쉽게 못했군요. 다음엔 꼭 성공하길!', 'error');
     };
 
@@ -87,12 +137,13 @@ export default function DailyPlanner({ dailyPlans, setDailyPlans, userProfile })
                                     <span className={`text-lg font-black ${s.t}`}>{t.task}</span>
                                     {t.status === 'postponed' && <span className="text-xs font-bold text-amber-500 mt-1">내일 날짜로 과제가 넘어갔습니다.</span>}
                                     {t.status === 'failed' && <span className="text-xs font-bold text-red-400 mt-1">오늘은 실천하지 못했습니다.</span>}
+                                    {t.status === 'done' && <span className="text-xs font-bold text-emerald-500 mt-1">✅ {t.duration}분 동안 완료했어요!</span>}
                                     {t.startTime && t.status === 'pending' && <span className="text-xs font-bold text-slate-400 mt-1">🕒 {t.startTime} 시작 · {t.duration}분</span>}
                                 </div>
                                 <div className="flex flex-wrap gap-2">
                                     {/* 컨트롤 패널 */}
                                     {t.status !== 'done' && (
-                                        <button onClick={()=>updateStatus(t.id, 'done')} className="flex items-center gap-1 px-3 py-2 bg-white text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all rounded-xl border border-emerald-100 shadow-sm font-bold text-sm">
+                                        <button onClick={()=>handleDoneClick(t)} className="flex items-center gap-1 px-3 py-2 bg-white text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all rounded-xl border border-emerald-100 shadow-sm font-bold text-sm">
                                             <CheckCircle size={18}/> 끝냄
                                         </button>
                                     )}
@@ -136,6 +187,53 @@ export default function DailyPlanner({ dailyPlans, setDailyPlans, userProfile })
             <div className="space-y-6">
                 <PomodoroTimer userProfile={userProfile} />
             </div>
+
+            {/* 과제 완료 시간 입력 모달 */}
+            {completionModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => { setCompletionModal(null); setActualMinutes(''); }}>
+                    <div className="bg-white p-8 rounded-[32px] shadow-2xl animate-fade-in max-w-sm w-full mx-auto border-t-8 border-emerald-400" onClick={e=>e.stopPropagation()}>
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center">
+                                <Clock className="text-emerald-600" size={24}/>
+                            </div>
+                            <h3 className="text-xl font-black text-slate-800">과제 완료! 🎉</h3>
+                        </div>
+                        <p className="text-slate-500 text-sm font-bold mb-6 mt-3">
+                            "<strong className="text-slate-700">{completionModal.task}</strong>"를 완료했어요!<br/>
+                            실제로 몇 분 동안 했는지 입력해 주세요.
+                        </p>
+                        <div className="bg-emerald-50 rounded-2xl p-4 flex items-center gap-3 mb-6 border border-emerald-100">
+                            <input
+                                type="number"
+                                value={actualMinutes}
+                                onChange={e => setActualMinutes(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && confirmCompletion()}
+                                className="flex-1 bg-white text-center text-2xl font-black text-slate-800 rounded-xl py-3 outline-none border-2 border-transparent focus:border-emerald-400 transition shadow-sm"
+                                min="1"
+                                max="300"
+                                autoFocus
+                            />
+                            <span className="text-lg font-black text-emerald-700 shrink-0">분</span>
+                        </div>
+                        <div className="flex gap-2 text-xs font-bold text-slate-400 mb-6 justify-center flex-wrap">
+                            {[10, 20, 30, 45, 60, 90].map(m => (
+                                <button key={m} onClick={() => setActualMinutes(String(m))} 
+                                    className={`px-3 py-1.5 rounded-full transition-all ${actualMinutes === String(m) ? 'bg-emerald-500 text-white shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-500'}`}>
+                                    {m}분
+                                </button>
+                            ))}
+                        </div>
+                        <div className="flex gap-3">
+                            <button onClick={() => { setCompletionModal(null); setActualMinutes(''); }} className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black hover:bg-slate-200 transition-all">
+                                취소
+                            </button>
+                            <button onClick={confirmCompletion} className="flex-1 py-4 bg-emerald-500 text-white rounded-2xl font-black shadow-lg hover:bg-emerald-600 active:scale-95 transition-all">
+                                완료 기록하기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

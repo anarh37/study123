@@ -75,7 +75,7 @@ export default function GoalSetting({ goals, setGoals, fixedSchedule, goldenTime
                 </div>
                 <button 
                     onClick={() => {
-                        setGoals({...goals, career: c, academic: a, studyTime: s}); 
+                        setGoals({...goals, career: c, academic: a, studyTime: parseInt(s, 10) || 0}); 
                         showToast('목표가 저장되었어요! 꿈을 향해 나아가요 🚀', 'success');
                     }} 
                     className="w-full py-5 bg-gradient-to-r from-amber-400 to-orange-400 text-white font-black rounded-2xl shadow-lg hover:scale-[1.02] active:scale-95 transition-all text-xl"

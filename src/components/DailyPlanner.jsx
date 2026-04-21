@@ -51,7 +51,7 @@ export default function DailyPlanner({ dailyPlans, setDailyPlans, userProfile, f
         if(!nt.trim()) return;
         const newPlans = {...dailyPlans};
         if(!newPlans[today]) newPlans[today] = { todos: [], checklist: [false, false, false], reflection: {} };
-        newPlans[today].todos.push({ id: Date.now(), task: nt, duration: 30, status: 'pending', aiScheduled: false });
+        newPlans[today].todos.push({ id: Date.now(), task: nt, duration: 15, status: 'pending', aiScheduled: false });
         setDailyPlans(newPlans);
         setNt('');
     };

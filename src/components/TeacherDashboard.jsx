@@ -115,10 +115,10 @@ export default function TeacherDashboard() {
     }, [selectedStudent]);
 
     return (
-        <div className="max-w-6xl mx-auto space-y-8 animate-fade-in pb-24 h-[100vh] lg:h-auto flex flex-col lg:flex-row gap-6">
+        <div className="max-w-6xl mx-auto space-y-8 animate-fade-in pb-24 min-h-[100vh] flex flex-col lg:flex-row gap-6">
             
             {/* Sidebar: Student List */}
-            <div className="lg:w-1/3 bg-white rounded-[32px] shadow-sm border border-slate-100 p-6 flex flex-col h-full lg:min-h-[600px]">
+            <div className="lg:w-1/3 w-full bg-white rounded-[32px] shadow-sm border border-slate-100 p-6 flex flex-col h-[500px] lg:h-[calc(100vh-8rem)] lg:sticky lg:top-16 lg:self-start">
                 <div className="flex items-center gap-3 mb-6 pb-6 border-b border-slate-100 shrink-0">
                     <div className="w-12 h-12 bg-rose-100 text-rose-500 rounded-2xl flex items-center justify-center">
                         <Users size={24} />
@@ -137,7 +137,7 @@ export default function TeacherDashboard() {
                     </button>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto space-y-2 no-scrollbar">
+                <div className="flex-1 overflow-y-auto space-y-2 pr-2">
                     {students.map(s => (
                         <button 
                             key={s.id} 

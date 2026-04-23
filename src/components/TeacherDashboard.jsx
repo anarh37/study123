@@ -10,7 +10,6 @@ export default function TeacherDashboard() {
     const [studentData, setStudentData] = useState(null);
     const [loadingData, setLoadingData] = useState(false);
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
-    const [isEmotionModalOpen, setIsEmotionModalOpen] = useState(false);
 
     // Fetch all students
     useEffect(() => {
@@ -260,15 +259,19 @@ export default function TeacherDashboard() {
                                 </p>
                             </button>
                             
-                            <button 
-                                onClick={() => setIsEmotionModalOpen(true)}
-                                className="bg-white rounded-[32px] p-6 sm:p-8 shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-amber-50 hover:border-amber-100 transition-all active:scale-[0.98] group"
-                            >
-                                <div className="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mb-4 text-3xl group-hover:scale-110 transition-transform">
+                            <div className="bg-white rounded-[32px] p-6 sm:p-8 shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center">
+                                <div className="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mb-4 text-3xl">
                                     {Object.entries(studentData.emotionCounts).sort((a,b)=>b[1]-a[1])[0]?.[0] || '❓'}
                                 </div>
-                                <h3 className="text-slate-400 font-bold mb-1">가장 자주 느낀 감정 <span className="text-[10px] bg-slate-100 text-slate-400 px-2 py-0.5 rounded-full ml-1 group-hover:bg-amber-200 group-hover:text-amber-700 transition-colors">상세보기</span></h3>
-                            </button>
+                                <h3 className="text-slate-400 font-bold mb-1">가장 자주 느낀 감정</h3>
+                                <div className="flex items-baseline gap-1 mt-2 flex-wrap justify-center">
+                                    {Object.entries(studentData.emotionCounts).length > 0 ? Object.entries(studentData.emotionCounts).map(([emo, count]) => (
+                                        <span key={emo} className="bg-slate-50 px-3 py-1.5 rounded-xl text-sm font-bold m-1 shadow-sm border border-slate-100">
+                                            {emo} <span className="text-slate-400 ml-1">{count}회</span>
+                                        </span>
+                                    )) : <span className="text-sm font-bold text-slate-300">작성된 일지가 없습니다.</span>}
+                                </div>
+                            </div>
                         </div>
 
                         {/* Recent 14 Days Growth Chart */}
@@ -326,84 +329,7 @@ export default function TeacherDashboard() {
             </div>
 
             {/* Task List Modal */}
-            {isTaskModalOpen && studentData && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
-                    <div className="bg-white rounded-[40px] shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh] animate-scale-up">
-                        <div className="p-6 sm:p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50">
-                            <div className="flex items-center gap-3">
-                                <div className="p-3 bg-blue-100 rounded-2xl text-blue-500">
-                                    <LayoutList size={24}/>
-                                </div>
-                                <div>
-                                    <h3 className="text-2xl font-black text-slate-800">과제 상세 내역</h3>
-                                    <p className="text-sm font-bold text-slate-400">최근 14일 동안의 과제 목록</p>
-                                </div>
-                            </div>
-                            <button onClick={() => setIsTaskModalOpen(false)} className="p-3 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-2xl transition-colors">
-                                <X size={24}/>
-                            </button>
-                        </div>
-                        <div className="p-6 sm:p-8 overflow-y-auto space-y-4 bg-slate-50/50 flex-1">
-                            {studentData.allTasks.length > 0 ? studentData.allTasks.map((t, idx) => (
-                                <div key={idx} className="p-5 rounded-3xl bg-white border border-slate-100 shadow-sm flex flex-col gap-3">
-                                    <div className="flex justify-between items-center">
-                                        <span className="bg-slate-50 px-3 py-1.5 rounded-xl text-xs font-black text-slate-500 border border-slate-100">
-                                            {t.date}
-                                        </span>
-                                        <span className={`text-[11px] font-black px-3 py-1.5 rounded-xl ${t.status === 'done' ? 'bg-emerald-100 text-emerald-600 border border-emerald-200' : t.status === 'failed' ? 'bg-red-100 text-red-600 border border-red-200' : t.status === 'postponed' ? 'bg-amber-100 text-amber-600 border border-amber-200' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
-                                            {t.status === 'done' ? '완료됨' : t.status === 'failed' ? '실패' : t.status === 'postponed' ? '미룸' : '선택 대기중'}
-                                        </span>
-                                    </div>
-                                    <p className="text-slate-800 font-bold text-lg">{t.task}</p>
-                                </div>
-                            )) : (
-                                <div className="text-center py-20 text-slate-400 font-bold flex flex-col items-center">
-                                    <AlertTriangle size={48} className="mb-4 opacity-30 text-amber-500" />
-                                    최근 기간 동안 등록된 과제가 없습니다.
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
 
-            {/* Emotion Counts Modal */}
-            {isEmotionModalOpen && studentData && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
-                    <div className="bg-white rounded-[40px] shadow-2xl w-full max-w-sm overflow-hidden flex flex-col max-h-[85vh] animate-scale-up">
-                        <div className="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50">
-                            <div className="flex items-center gap-3">
-                                <div className="p-3 bg-amber-100 rounded-2xl text-amber-500 text-xl">
-                                    {Object.entries(studentData.emotionCounts).sort((a,b)=>b[1]-a[1])[0]?.[0] || '❓'}
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-black text-slate-800">감정 통계 상세</h3>
-                                </div>
-                            </div>
-                            <button onClick={() => setIsEmotionModalOpen(false)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-xl transition-colors">
-                                <X size={20}/>
-                            </button>
-                        </div>
-                        <div className="p-6 overflow-y-auto space-y-3 bg-slate-50/50 flex-1">
-                            {Object.entries(studentData.emotionCounts).length > 0 ? (
-                                Object.entries(studentData.emotionCounts)
-                                .sort((a,b) => b[1] - a[1])
-                                .map(([emo, count], idx) => (
-                                    <div key={idx} className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm flex justify-between items-center">
-                                        <div className="text-4xl">{emo}</div>
-                                        <div className="text-lg font-black text-slate-700">{count}회</div>
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="text-center py-10 text-slate-400 font-bold flex flex-col items-center">
-                                    <AlertTriangle size={30} className="mb-4 opacity-30 text-amber-500" />
-                                    기록된 감정이 없습니다.
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

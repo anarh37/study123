@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '../firebase';
 import { collection, query, onSnapshot, getDoc, doc, deleteDoc, setDoc } from 'firebase/firestore';
-import { Users, FileText, Activity, PieChart, CheckCircle2, TrendingUp, AlertTriangle, ChevronRight, Trophy, RefreshCcw } from 'lucide-react';
+import { Users, FileText, Activity, PieChart, CheckCircle2, TrendingUp, AlertTriangle, ChevronRight, Trophy, RefreshCcw, LayoutList } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function TeacherDashboard() {
     const [students, setStudents] = useState([]);
@@ -78,6 +79,7 @@ export default function TeacherDashboard() {
                 let doneTasks = 0;
                 let emotionCounts = {};
                 let recentReflections = [];
+                let allTasks = [];
 
                 Object.keys(dailyPlans).forEach(date => {
                     const dayData = dailyPlans[date];
@@ -85,6 +87,10 @@ export default function TeacherDashboard() {
                     if (dayData.todos && Array.isArray(dayData.todos)) {
                         totalTasks += dayData.todos.length;
                         doneTasks += dayData.todos.filter(t => t.status === 'done').length;
+                        
+                        dayData.todos.forEach(t => {
+                            allTasks.push({ date, ...t });
+                        });
                     }
                     // Reflections
                     if (dayData.reflection && dayData.reflection.emotion) {
@@ -96,6 +102,28 @@ export default function TeacherDashboard() {
 
                 // Sort reflections by date descending
                 recentReflections.sort((a,b) => new Date(b.date) - new Date(a.date));
+                
+                // Sort tasks by date descending
+                allTasks.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+                // Process recentData for chart
+                const today = new Date();
+                const recentData = Array.from({ length: 14 }, (_, i) => {
+                    const d = new Date(); d.setDate(today.getDate() - 13 + i);
+                    const y = d.getFullYear();
+                    const m = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    const ds = `${y}-${m}-${day}`;
+                    const plan = dailyPlans[ds];
+                    const ts = plan?.todos || [];
+                    const done = ts.filter(t => t.status === 'done').length;
+                    const total = ts.length;
+                    return {
+                        date: ds.slice(5).replace('-', '/'),
+                        완료율: total > 0 ? Math.round(done / total * 100) : 0,
+                        노력점수: plan?.reflection?.rating || 0
+                    };
+                });
 
                 setStudentData({
                     totalTasks,
@@ -103,6 +131,8 @@ export default function TeacherDashboard() {
                     completionRate: totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0,
                     emotionCounts,
                     recentReflections,
+                    allTasks,
+                    recentData,
                     goals: goalsInfo
                 });
             } catch (err) {
@@ -240,12 +270,34 @@ export default function TeacherDashboard() {
                             </div>
                         </div>
 
-                        {/* Reflection History */}
-                        <div className="bg-white rounded-[32px] p-6 sm:p-8 shadow-sm border border-slate-100">
-                            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-50">
-                                <FileText className="text-rose-500" size={24}/>
-                                <h3 className="text-xl font-black text-slate-800">성찰 일지 기록</h3>
+                        {/* Recent 14 Days Growth Chart */}
+                        <div className="bg-white p-6 sm:p-8 rounded-[32px] shadow-sm border border-slate-100">
+                            <h3 className="font-black text-xl text-slate-800 mb-6 flex items-center gap-2">
+                                <TrendingUp className="text-emerald-500"/> 최근 2주 학생 성장 그래프
+                            </h3>
+                            <div className="h-[250px] w-full">
+                                <ResponsiveContainer>
+                                    <LineChart data={studentData.recentData}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false}/>
+                                        <XAxis dataKey="date" tick={{ fontSize: 11, fontWeight: 'bold' }} axisLine={false} tickLine={false} dy={10}/>
+                                        <YAxis yAxisId="left" domain={[0, 100]} tick={{ fontSize: 11 }} axisLine={false} tickLine={false}/>
+                                        <YAxis yAxisId="right" orientation="right" domain={[0, 5]} hide/>
+                                        <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.1)' }}/>
+                                        <Legend wrapperStyle={{ paddingTop: '10px' }}/>
+                                        <Line yAxisId="left" name="과제 완료율(%)" type="monotone" dataKey="완료율" stroke="#10b981" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }}/>
+                                        <Line yAxisId="right" name="노력 점수" type="monotone" dataKey="노력점수" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }}/>
+                                    </LineChart>
+                                </ResponsiveContainer>
                             </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                            {/* Reflection History */}
+                            <div className="bg-white rounded-[32px] p-6 sm:p-8 shadow-sm border border-slate-100 flex-1">
+                                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-50">
+                                    <FileText className="text-rose-500" size={24}/>
+                                    <h3 className="text-xl font-black text-slate-800">성찰 일지 기록</h3>
+                                </div>
                             <div className="space-y-4">
                                 {studentData.recentReflections.length > 0 ? studentData.recentReflections.map((ref, idx) => (
                                     <div key={idx} className="p-5 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col sm:flex-row gap-4 sm:items-center">
@@ -266,6 +318,35 @@ export default function TeacherDashboard() {
                                         아직 성찰 일지를 기록하지 않았습니다.
                                     </div>
                                 )}
+                                </div>
+                            </div>
+
+                            {/* Task List (과제 입력 내역) */}
+                            <div className="bg-white rounded-[32px] p-6 sm:p-8 shadow-sm border border-slate-100 flex-1">
+                                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-50">
+                                    <LayoutList className="text-blue-500" size={24}/>
+                                    <h3 className="text-xl font-black text-slate-800">최근 과제 활동 상세</h3>
+                                </div>
+                                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 no-scrollbar">
+                                    {studentData.allTasks.length > 0 ? studentData.allTasks.slice(0, 30).map((t, idx) => (
+                                        <div key={idx} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col gap-2">
+                                            <div className="flex justify-between items-center">
+                                                <span className="bg-white px-3 py-1 rounded-lg text-[11px] font-black text-slate-400 shadow-sm">
+                                                    {t.date}
+                                                </span>
+                                                <span className={`text-[11px] font-black px-2 py-1 rounded-md ${t.status === 'done' ? 'bg-emerald-100 text-emerald-600' : t.status === 'failed' ? 'bg-red-100 text-red-600' : t.status === 'postponed' ? 'bg-amber-100 text-amber-600' : 'bg-slate-200 text-slate-500'}`}>
+                                                    {t.status === 'done' ? '완료됨' : t.status === 'failed' ? '실패' : t.status === 'postponed' ? '미룸' : '대기중'}
+                                                </span>
+                                            </div>
+                                            <p className="text-slate-800 font-bold">{t.task}</p>
+                                        </div>
+                                    )) : (
+                                        <div className="text-center py-10 text-slate-400 font-bold flex flex-col items-center">
+                                            <AlertTriangle size={30} className="mb-2 opacity-30" />
+                                            아직 과제를 등록하지 않았습니다.
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>

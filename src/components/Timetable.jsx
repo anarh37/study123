@@ -145,7 +145,17 @@ export default function Timetable({ fixedSchedule, setFixedSchedule, goldenTime,
     };
 
     const handlePointerMove = (e) => {
-        if (!isDragging) return;
+        if (!isDragging) {
+            if (startPosRef.current && dragTimerRef.current) {
+                const dx = Math.abs(e.clientX - startPosRef.current.x);
+                const dy = Math.abs(e.clientY - startPosRef.current.y);
+                if (dx > 10 || dy > 10) {
+                    clearTimeout(dragTimerRef.current);
+                    dragTimerRef.current = null;
+                }
+            }
+            return;
+        }
         const container = scrollContainerRef.current;
         if (!container) return;
         

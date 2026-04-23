@@ -6,8 +6,8 @@ import { Users, Target, Flame, Sparkles } from 'lucide-react';
 export default function ClassBoard() {
     const [students, setStudents] = useState([]);
     
-    // 협동 목표 분 (초3 22명 일주일 기준)
-    const GOAL_MINUTES = 3000;
+    // 협동 목표 분 (초3 22명 일주일 기준: 10,000분 상향)
+    const GOAL_MINUTES = 10000;
 
     useEffect(() => {
         // 최근 활동한 순서대로 가져오기 (피드용)
@@ -50,7 +50,7 @@ export default function ClassBoard() {
                     </div>
                     
                     <p className="text-emerald-50 text-base sm:text-lg font-bold mb-4 flex items-center gap-2">
-                        <Target size={20} /> 이번 주 우리 반 목표: 다이아몬드 등급 (3,000분)
+                        <Target size={20} /> 이번 주 우리 반 목표: 다이아몬드 등급 (10,000분)
                     </p>
 
                     {/* Progress Bar */}

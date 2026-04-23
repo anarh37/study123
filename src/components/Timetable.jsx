@@ -188,16 +188,22 @@ export default function Timetable({ fixedSchedule, setFixedSchedule, goldenTime,
     };
 
     const handleSelectCategory = (cat) => {
-        const newSched = {...fixedSchedule};
-        const newGold = new Set(goldenTime);
-        selectedCells.forEach(cid => {
-            delete newSched[cid];
-            newGold.delete(cid);
-            if (cat === 'goldenTime') newGold.add(cid);
-            else if (cat !== '삭제') newSched[cid] = cat;
+        setFixedSchedule(prev => {
+            const newSched = {...prev};
+            selectedCells.forEach(cid => {
+                delete newSched[cid];
+                if (cat !== 'goldenTime' && cat !== '삭제') newSched[cid] = cat;
+            });
+            return newSched;
         });
-        setFixedSchedule(newSched);
-        setGoldenTime(Array.from(newGold));
+        setGoldenTime(prev => {
+            const newGold = new Set(prev);
+            selectedCells.forEach(cid => {
+                newGold.delete(cid);
+                if (cat === 'goldenTime') newGold.add(cid);
+            });
+            return Array.from(newGold);
+        });
         setSelectedCells(new Set());
         setSelectionStart(null);
         setSelectionEnd(null);

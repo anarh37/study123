@@ -7,6 +7,7 @@ export default function WeeklyTaskManager({ weeklyTasks, setWeeklyTasks, taskMat
     const [nt, setNt] = useState('');
     const [duration, setDuration] = useState('30');
     const [deadline, setDeadline] = useState(addDays(today, 7));
+    const [priority, setPriority] = useState('urgentImportant');
     
     // 드래그 상태 관리 (PC용)
     const [draggedTaskId, setDraggedTaskId] = useState(null);
@@ -25,9 +26,10 @@ export default function WeeklyTaskManager({ weeklyTasks, setWeeklyTasks, taskMat
         setWeeklyTasks([...weeklyTasks, newTask]);
         setTaskMatrix({
             ...taskMatrix,
-            notUrgentNotImportant: [...(taskMatrix.notUrgentNotImportant || []), id]
+            [priority]: [...(taskMatrix[priority] || []), id]
         });
         setNt('');
+        setPriority('urgentImportant');
     };
 
     const removeTask = (id, qKey) => {
@@ -75,6 +77,18 @@ export default function WeeklyTaskManager({ weeklyTasks, setWeeklyTasks, taskMat
                             placeholder="과제 내용을 입력하세요..."
                             className="w-full p-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-violet-400 outline-none font-bold text-slate-700 transition-all"
                         />
+                    </div>
+                    <div className="w-full md:w-32">
+                        <label className="block text-xs font-black text-slate-400 mb-2 ml-1">우선순위</label>
+                        <select 
+                            value={priority} onChange={e=>setPriority(e.target.value)}
+                            className="w-full p-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-violet-400 outline-none font-bold text-slate-700 transition-all text-sm cursor-pointer"
+                        >
+                            <option value="urgentImportant">🔥 1순위</option>
+                            <option value="notUrgentImportant">⭐ 2순위</option>
+                            <option value="urgentNotImportant">📢 3순위</option>
+                            <option value="notUrgentNotImportant">☁️ 4순위</option>
+                        </select>
                     </div>
                     <div className="w-full md:w-32">
                         <label className="block text-xs font-black text-slate-400 mb-2 ml-1">예상 시간(분)</label>

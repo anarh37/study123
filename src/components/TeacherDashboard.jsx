@@ -10,6 +10,7 @@ export default function TeacherDashboard() {
     const [studentData, setStudentData] = useState(null);
     const [loadingData, setLoadingData] = useState(false);
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+    const [isEmotionModalOpen, setIsEmotionModalOpen] = useState(false);
 
     // Fetch all students
     useEffect(() => {
@@ -259,19 +260,22 @@ export default function TeacherDashboard() {
                                 </p>
                             </button>
                             
-                            <div className="bg-white rounded-[32px] p-6 sm:p-8 shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center">
-                                <div className="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mb-4 text-3xl">
+                            <button 
+                                onClick={() => setIsEmotionModalOpen(true)}
+                                className="bg-white rounded-[32px] p-6 sm:p-8 shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-amber-50 hover:border-amber-100 transition-all active:scale-[0.98] group"
+                            >
+                                <div className="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mb-4 text-3xl group-hover:scale-110 transition-transform">
                                     {Object.entries(studentData.emotionCounts).sort((a,b)=>b[1]-a[1])[0]?.[0] || '❓'}
                                 </div>
-                                <h3 className="text-slate-400 font-bold mb-1">가장 자주 느낀 감정</h3>
+                                <h3 className="text-slate-400 font-bold mb-1">가장 자주 느낀 감정 <span className="text-[10px] bg-slate-100 text-slate-400 px-2 py-0.5 rounded-full ml-1 group-hover:bg-amber-200 group-hover:text-amber-700 transition-colors">상세보기</span></h3>
                                 <div className="flex items-baseline gap-1 mt-2 flex-wrap justify-center">
                                     {Object.entries(studentData.emotionCounts).length > 0 ? Object.entries(studentData.emotionCounts).map(([emo, count]) => (
-                                        <span key={emo} className="bg-slate-50 px-3 py-1.5 rounded-xl text-sm font-bold m-1 shadow-sm border border-slate-100">
+                                        <span key={emo} className="bg-slate-50 group-hover:bg-white px-3 py-1.5 rounded-xl text-sm font-bold m-1 shadow-sm border border-slate-100 transition-colors">
                                             {emo} <span className="text-slate-400 ml-1">{count}회</span>
                                         </span>
                                     )) : <span className="text-sm font-bold text-slate-300">작성된 일지가 없습니다.</span>}
                                 </div>
-                            </div>
+                            </button>
                         </div>
 
                         {/* Recent 14 Days Growth Chart */}
@@ -295,34 +299,6 @@ export default function TeacherDashboard() {
                             </div>
                         </div>
 
-                        {/* Reflection History */}
-                        <div className="bg-white rounded-[32px] p-6 sm:p-8 shadow-sm border border-slate-100">
-                            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-50">
-                                <FileText className="text-rose-500" size={24}/>
-                                <h3 className="text-xl font-black text-slate-800">성찰 일지 기록</h3>
-                            </div>
-                            <div className="space-y-4">
-                                {studentData.recentReflections.length > 0 ? studentData.recentReflections.map((ref, idx) => (
-                                    <div key={idx} className="p-5 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col sm:flex-row gap-4 sm:items-center">
-                                        <div className="bg-white px-4 py-2 rounded-xl text-sm font-black text-slate-500 shadow-sm shrink-0 text-center">
-                                            {ref.date}
-                                        </div>
-                                        <div className="text-5xl shrink-0 text-center sm:text-left drop-shadow-sm">{ref.emotion}</div>
-                                        <div className="flex-1">
-                                            <p className="text-slate-800 font-bold text-lg mb-1">"{ref.achieved}"</p>
-                                            <div className="flex gap-1 text-yellow-400">
-                                                {'★'.repeat(ref.rating)}{'☆'.repeat(5-ref.rating)}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )) : (
-                                    <div className="text-center py-10 text-slate-400 font-bold flex flex-col items-center">
-                                        <AlertTriangle size={30} className="mb-2 opacity-30" />
-                                        아직 성찰 일지를 기록하지 않았습니다.
-                                    </div>
-                                )}
-                            </div>
-                        </div>
                     </div>
                 ) : null}
             </div>
@@ -362,6 +338,54 @@ export default function TeacherDashboard() {
                                 <div className="text-center py-20 text-slate-400 font-bold flex flex-col items-center">
                                     <AlertTriangle size={48} className="mb-4 opacity-30 text-amber-500" />
                                     최근 기간 동안 등록된 과제가 없습니다.
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Reflection History Modal */}
+            {isEmotionModalOpen && studentData && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white rounded-[40px] shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[85vh] animate-scale-up">
+                        <div className="p-6 sm:p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50">
+                            <div className="flex items-center gap-3">
+                                <div className="p-3 bg-rose-100 rounded-2xl text-rose-500">
+                                    <FileText size={24}/>
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-black text-slate-800">성찰 일지 상세 내역</h3>
+                                    <p className="text-sm font-bold text-slate-400">학생이 직접 작성한 하루하루의 기록입니다</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setIsEmotionModalOpen(false)} className="p-3 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-2xl transition-colors">
+                                <X size={24}/>
+                            </button>
+                        </div>
+                        <div className="p-6 sm:p-8 overflow-y-auto space-y-4 bg-slate-50/50 flex-1">
+                            {studentData.recentReflections.length > 0 ? studentData.recentReflections.map((ref, idx) => (
+                                <div key={idx} className="p-5 rounded-3xl bg-white border border-slate-100 shadow-sm flex flex-col sm:flex-row gap-4 sm:items-center transition-all hover:shadow-md">
+                                    <div className="flex flex-col gap-2 items-center sm:items-start shrink-0">
+                                        <div className="bg-slate-50 px-4 py-2 rounded-xl text-sm font-black text-slate-500 border border-slate-100">
+                                            {ref.date}
+                                        </div>
+                                        <div className="text-6xl drop-shadow-sm mt-2">{ref.emotion}</div>
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-slate-800 font-bold text-xl mb-3 leading-snug">"{ref.achieved}"</p>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-black text-slate-400 uppercase">노력 점수</span>
+                                            <div className="flex gap-1 text-amber-400 text-lg">
+                                                {'★'.repeat(ref.rating)}{'☆'.repeat(5-ref.rating)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )) : (
+                                <div className="text-center py-20 text-slate-400 font-bold flex flex-col items-center">
+                                    <AlertTriangle size={48} className="mb-4 opacity-30 text-rose-500" />
+                                    최근 기간 동안 기록된 성찰 일지가 없습니다.
                                 </div>
                             )}
                         </div>

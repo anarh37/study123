@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '../firebase';
 import { collection, query, onSnapshot, getDoc, doc, deleteDoc, setDoc } from 'firebase/firestore';
-import { Users, FileText, Activity, PieChart, CheckCircle2, TrendingUp, AlertTriangle, ChevronRight, Trophy, RefreshCcw, LayoutList } from 'lucide-react';
+import { Users, FileText, Activity, PieChart, CheckCircle2, TrendingUp, AlertTriangle, ChevronRight, Trophy, RefreshCcw, LayoutList, X } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function TeacherDashboard() {
@@ -9,6 +9,7 @@ export default function TeacherDashboard() {
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [studentData, setStudentData] = useState(null);
     const [loadingData, setLoadingData] = useState(false);
+    const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
 
     // Fetch all students
     useEffect(() => {
@@ -241,19 +242,22 @@ export default function TeacherDashboard() {
 
                         {/* Summary Cards */}
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-white rounded-[32px] p-6 sm:p-8 shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center">
-                                <div className="w-16 h-16 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mb-4">
+                            <button 
+                                onClick={() => setIsTaskModalOpen(true)}
+                                className="bg-white rounded-[32px] p-6 sm:p-8 shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-emerald-50 hover:border-emerald-100 transition-all active:scale-[0.98] group"
+                            >
+                                <div className="w-16 h-16 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                                     <PieChart size={30} />
                                 </div>
-                                <h3 className="text-slate-400 font-bold mb-1">과제 완수율</h3>
+                                <h3 className="text-slate-400 font-bold mb-1">과제 완수율 <span className="text-[10px] bg-slate-100 text-slate-400 px-2 py-0.5 rounded-full ml-1 group-hover:bg-emerald-200 group-hover:text-emerald-700 transition-colors">상세보기</span></h3>
                                 <div className="flex items-baseline gap-1">
                                     <span className="text-4xl font-black text-slate-800">{studentData.completionRate}</span>
                                     <span className="text-xl font-bold text-slate-400">%</span>
                                 </div>
-                                <p className="text-xs text-slate-400 mt-2 font-bold bg-slate-50 px-3 py-1 rounded-full text-center">
+                                <p className="text-xs text-slate-400 mt-2 font-bold bg-slate-50 group-hover:bg-white px-3 py-1 rounded-full text-center transition-colors">
                                     총 {studentData.totalTasks}개 중 {studentData.doneTasks}개 완료
                                 </p>
-                            </div>
+                            </button>
                             
                             <div className="bg-white rounded-[32px] p-6 sm:p-8 shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center">
                                 <div className="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mb-4 text-3xl">
@@ -291,13 +295,12 @@ export default function TeacherDashboard() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                            {/* Reflection History */}
-                            <div className="bg-white rounded-[32px] p-6 sm:p-8 shadow-sm border border-slate-100 flex-1">
-                                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-50">
-                                    <FileText className="text-rose-500" size={24}/>
-                                    <h3 className="text-xl font-black text-slate-800">성찰 일지 기록</h3>
-                                </div>
+                        {/* Reflection History */}
+                        <div className="bg-white rounded-[32px] p-6 sm:p-8 shadow-sm border border-slate-100">
+                            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-50">
+                                <FileText className="text-rose-500" size={24}/>
+                                <h3 className="text-xl font-black text-slate-800">성찰 일지 기록</h3>
+                            </div>
                             <div className="space-y-4">
                                 {studentData.recentReflections.length > 0 ? studentData.recentReflections.map((ref, idx) => (
                                     <div key={idx} className="p-5 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col sm:flex-row gap-4 sm:items-center">
@@ -318,40 +321,53 @@ export default function TeacherDashboard() {
                                         아직 성찰 일지를 기록하지 않았습니다.
                                     </div>
                                 )}
-                                </div>
-                            </div>
-
-                            {/* Task List (과제 입력 내역) */}
-                            <div className="bg-white rounded-[32px] p-6 sm:p-8 shadow-sm border border-slate-100 flex-1">
-                                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-50">
-                                    <LayoutList className="text-blue-500" size={24}/>
-                                    <h3 className="text-xl font-black text-slate-800">최근 과제 활동 상세</h3>
-                                </div>
-                                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 no-scrollbar">
-                                    {studentData.allTasks.length > 0 ? studentData.allTasks.slice(0, 30).map((t, idx) => (
-                                        <div key={idx} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col gap-2">
-                                            <div className="flex justify-between items-center">
-                                                <span className="bg-white px-3 py-1 rounded-lg text-[11px] font-black text-slate-400 shadow-sm">
-                                                    {t.date}
-                                                </span>
-                                                <span className={`text-[11px] font-black px-2 py-1 rounded-md ${t.status === 'done' ? 'bg-emerald-100 text-emerald-600' : t.status === 'failed' ? 'bg-red-100 text-red-600' : t.status === 'postponed' ? 'bg-amber-100 text-amber-600' : 'bg-slate-200 text-slate-500'}`}>
-                                                    {t.status === 'done' ? '완료됨' : t.status === 'failed' ? '실패' : t.status === 'postponed' ? '미룸' : '대기중'}
-                                                </span>
-                                            </div>
-                                            <p className="text-slate-800 font-bold">{t.task}</p>
-                                        </div>
-                                    )) : (
-                                        <div className="text-center py-10 text-slate-400 font-bold flex flex-col items-center">
-                                            <AlertTriangle size={30} className="mb-2 opacity-30" />
-                                            아직 과제를 등록하지 않았습니다.
-                                        </div>
-                                    )}
-                                </div>
                             </div>
                         </div>
                     </div>
                 ) : null}
             </div>
+
+            {/* Task List Modal */}
+            {isTaskModalOpen && studentData && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white rounded-[40px] shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh] animate-scale-up">
+                        <div className="p-6 sm:p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50">
+                            <div className="flex items-center gap-3">
+                                <div className="p-3 bg-blue-100 rounded-2xl text-blue-500">
+                                    <LayoutList size={24}/>
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-black text-slate-800">과제 상세 내역</h3>
+                                    <p className="text-sm font-bold text-slate-400">최근 14일 동안의 과제 목록</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setIsTaskModalOpen(false)} className="p-3 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-2xl transition-colors">
+                                <X size={24}/>
+                            </button>
+                        </div>
+                        <div className="p-6 sm:p-8 overflow-y-auto space-y-4 bg-slate-50/50 flex-1">
+                            {studentData.allTasks.length > 0 ? studentData.allTasks.map((t, idx) => (
+                                <div key={idx} className="p-5 rounded-3xl bg-white border border-slate-100 shadow-sm flex flex-col gap-3">
+                                    <div className="flex justify-between items-center">
+                                        <span className="bg-slate-50 px-3 py-1.5 rounded-xl text-xs font-black text-slate-500 border border-slate-100">
+                                            {t.date}
+                                        </span>
+                                        <span className={`text-[11px] font-black px-3 py-1.5 rounded-xl ${t.status === 'done' ? 'bg-emerald-100 text-emerald-600 border border-emerald-200' : t.status === 'failed' ? 'bg-red-100 text-red-600 border border-red-200' : t.status === 'postponed' ? 'bg-amber-100 text-amber-600 border border-amber-200' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
+                                            {t.status === 'done' ? '완료됨' : t.status === 'failed' ? '실패' : t.status === 'postponed' ? '미룸' : '선택 대기중'}
+                                        </span>
+                                    </div>
+                                    <p className="text-slate-800 font-bold text-lg">{t.task}</p>
+                                </div>
+                            )) : (
+                                <div className="text-center py-20 text-slate-400 font-bold flex flex-col items-center">
+                                    <AlertTriangle size={48} className="mb-4 opacity-30 text-amber-500" />
+                                    최근 기간 동안 등록된 과제가 없습니다.
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

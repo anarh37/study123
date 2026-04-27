@@ -146,7 +146,8 @@ export default function TeacherDashboard() {
     }, [selectedStudent]);
 
     return (
-        <div className="max-w-6xl mx-auto space-y-8 animate-fade-in pb-24 min-h-[100vh] flex flex-col lg:flex-row gap-6">
+        <>
+            <div className="max-w-6xl mx-auto space-y-8 animate-fade-in pb-24 min-h-[100vh] flex flex-col lg:flex-row gap-6">
             
             {/* Sidebar: Student List */}
             <div className="lg:w-1/3 w-full bg-white rounded-[32px] shadow-sm border border-slate-100 p-6 flex flex-col h-[500px] lg:h-[calc(100vh-8rem)] lg:sticky lg:top-16 lg:self-start">
@@ -340,9 +341,8 @@ export default function TeacherDashboard() {
                     </div>
                 ) : null}
             </div>
-
             {/* Task List Modal */}
-            {isTaskModalOpen && (
+            {isTaskModalOpen && studentData && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setIsTaskModalOpen(false)}>
                     <div className="bg-white p-8 rounded-[32px] shadow-2xl animate-fade-in max-w-lg w-full max-h-[80vh] flex flex-col mx-auto" onClick={e=>e.stopPropagation()}>
                         <div className="flex justify-between items-center mb-6">
@@ -374,5 +374,6 @@ export default function TeacherDashboard() {
                     </div>
                 </div>
             )}
+        </>
     );
 }

@@ -341,7 +341,8 @@ export default function TeacherDashboard() {
                     </div>
                 ) : null}
             </div>
-            {/* Task List Modal */}
+        </div>
+        {/* Task List Modal */}
             {isTaskModalOpen && studentData && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setIsTaskModalOpen(false)}>
                     <div className="bg-white p-8 rounded-[32px] shadow-2xl animate-fade-in max-w-lg w-full max-h-[80vh] flex flex-col mx-auto" onClick={e=>e.stopPropagation()}>

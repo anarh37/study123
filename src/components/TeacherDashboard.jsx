@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '../firebase';
 import { collection, query, onSnapshot, getDoc, doc, deleteDoc, setDoc } from 'firebase/firestore';
-import { Users, FileText, Activity, PieChart, CheckCircle2, TrendingUp, AlertTriangle, ChevronRight, Trophy, RefreshCcw, LayoutList, X } from 'lucide-react';
+import { Users, FileText, Activity, PieChart, CheckCircle2, TrendingUp, AlertTriangle, ChevronRight, Trophy, RefreshCcw, X } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function TeacherDashboard() {
@@ -347,7 +347,7 @@ export default function TeacherDashboard() {
                     <div className="bg-white p-8 rounded-[32px] shadow-2xl animate-fade-in max-w-lg w-full max-h-[80vh] flex flex-col mx-auto" onClick={e=>e.stopPropagation()}>
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-xl font-black text-slate-800 flex items-center gap-2">
-                                <LayoutList className="text-emerald-500" /> 과제 완수율 상세보기
+                                <FileText className="text-emerald-500" /> 과제 완수율 상세보기
                             </h3>
                             <button onClick={() => setIsTaskModalOpen(false)} className="text-slate-400 hover:text-slate-600">
                                 <X size={24} />

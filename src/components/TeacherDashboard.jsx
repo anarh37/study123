@@ -302,7 +302,19 @@ export default function TeacherDashboard() {
                                 <h3 className="text-xl font-black text-slate-800">성찰 일지 기록</h3>
                             </div>
                             <div className="space-y-4">
-                                {studentData.recentReflections.length > 0 ? studentData.recentReflections.map((ref, idx) => (
+                                {studentData.recentReflections.length > 0 ? studentData.recentReflections.map((ref, idx) => {
+                                    let timeStr = '';
+                                    if (ref.updatedAt) {
+                                        const d = new Date(ref.updatedAt);
+                                        const m = d.getMonth() + 1;
+                                        const day = d.getDate();
+                                        const h = d.getHours();
+                                        const min = String(d.getMinutes()).padStart(2, '0');
+                                        const ampm = h >= 12 ? '오후' : '오전';
+                                        const h12 = h % 12 || 12;
+                                        timeStr = `${m}월 ${day}일 ${ampm} ${h12}시 ${min}분 입력`;
+                                    }
+                                    return (
                                     <div key={idx} className="p-5 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col sm:flex-row gap-4 sm:items-center">
                                         <div className="bg-white px-4 py-2 rounded-xl text-sm font-black text-slate-500 shadow-sm shrink-0 text-center">
                                             {ref.date}
@@ -313,9 +325,10 @@ export default function TeacherDashboard() {
                                             <div className="flex gap-1 text-yellow-400">
                                                 {'★'.repeat(ref.rating)}{'☆'.repeat(5-ref.rating)}
                                             </div>
+                                            {timeStr && <p className="text-[10px] text-slate-400 font-bold mt-2">{timeStr}</p>}
                                         </div>
                                     </div>
-                                )) : (
+                                )}) : (
                                     <div className="text-center py-10 text-slate-400 font-bold flex flex-col items-center">
                                         <AlertTriangle size={30} className="mb-2 opacity-30" />
                                         아직 성찰 일지를 기록하지 않았습니다.
@@ -329,7 +342,37 @@ export default function TeacherDashboard() {
             </div>
 
             {/* Task List Modal */}
-
-        </div>
+            {isTaskModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setIsTaskModalOpen(false)}>
+                    <div className="bg-white p-8 rounded-[32px] shadow-2xl animate-fade-in max-w-lg w-full max-h-[80vh] flex flex-col mx-auto" onClick={e=>e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-black text-slate-800 flex items-center gap-2">
+                                <LayoutList className="text-emerald-500" /> 과제 완수율 상세보기
+                            </h3>
+                            <button onClick={() => setIsTaskModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <div className="overflow-y-auto pr-2 space-y-3 flex-1 min-h-0">
+                            {studentData.allTasks.length > 0 ? studentData.allTasks.map((t, idx) => (
+                                <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border bg-slate-50 border-slate-100 gap-2">
+                                    <div>
+                                        <div className="text-xs font-bold text-slate-400 mb-1">{t.date}</div>
+                                        <div className={`font-black ${t.status === 'done' ? 'text-slate-400 line-through' : 'text-slate-700'}`}>{t.task}</div>
+                                    </div>
+                                    <div className="shrink-0">
+                                        {t.status === 'done' && <span className="bg-emerald-100 text-emerald-600 text-xs font-bold px-2 py-1 rounded-lg">완료 ({t.duration}분)</span>}
+                                        {t.status === 'pending' && <span className="bg-slate-200 text-slate-500 text-xs font-bold px-2 py-1 rounded-lg">대기중</span>}
+                                        {t.status === 'postponed' && <span className="bg-amber-100 text-amber-600 text-xs font-bold px-2 py-1 rounded-lg">미룸</span>}
+                                        {t.status === 'failed' && <span className="bg-red-100 text-red-600 text-xs font-bold px-2 py-1 rounded-lg">실패</span>}
+                                    </div>
+                                </div>
+                            )) : (
+                                <div className="text-center py-10 text-slate-400 font-bold">등록된 과제가 없습니다.</div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
     );
 }

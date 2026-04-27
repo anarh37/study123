@@ -20,6 +20,7 @@ export default function ReflectionJournal({ dailyPlans, setDailyPlans }) {
             if (!next[sel]) next[sel] = { todos: [], checklist: [false,false,false], reflection: {} };
             if (!next[sel].reflection) next[sel].reflection = { emotion: '', achieved: '', rating: 3 };
             next[sel].reflection[f] = v;
+            next[sel].reflection.updatedAt = new Date().toISOString();
             return next;
         });
     };

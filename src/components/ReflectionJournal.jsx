@@ -1,11 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { getTodayDateString, getStartOfWeek } from '../utils/constants';
-import { BrainCircuit, ChevronLeft, ChevronRight } from 'lucide-react';
+import { BrainCircuit, ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
 
 export default function ReflectionJournal({ dailyPlans, setDailyPlans }) {
     const today = getTodayDateString();
     const [weekStart, setWeekStart] = useState(getStartOfWeek(new Date(today)));
     const [sel, setSel] = useState(today);
+
+    // 오늘 기준 이번 주 완수율 계산
+    const thisWeekStats = useMemo(() => {
+        const todayDate = new Date(today);
+        const ws = getStartOfWeek(todayDate);
+        let done = 0, total = 0;
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(ws);
+            d.setDate(ws.getDate() + i);
+            const dateStr = getTodayDateString(d);
+            if (dateStr > today) break;
+            const todos = dailyPlans?.[dateStr]?.todos || [];
+            total += todos.length;
+            done += todos.filter(t => t.status === 'done').length;
+        }
+        const rate = total > 0 ? Math.round(done / total * 100) : null;
+        return { done, total, rate };
+    }, [dailyPlans, today]);
 
     const weekDates = Array.from({ length: 7 }, (_, i) => {
         const d = new Date(weekStart); d.setDate(d.getDate() + i);
@@ -25,8 +43,51 @@ export default function ReflectionJournal({ dailyPlans, setDailyPlans }) {
         });
     };
 
+    const rateColor = thisWeekStats.rate === null ? 'from-slate-400 to-slate-500'
+        : thisWeekStats.rate >= 80 ? 'from-emerald-400 to-teal-500'
+        : thisWeekStats.rate >= 50 ? 'from-violet-400 to-indigo-500'
+        : 'from-amber-400 to-orange-500';
+
     return (
-        <div className="bg-white p-8 rounded-[32px] shadow-xl border-t-8 border-violet-400 animate-fade-in max-w-2xl mx-auto">
+        <div className="space-y-5 animate-fade-in max-w-2xl mx-auto">
+            {/* 이번 주 완수율 배너 */}
+            <div className={`bg-gradient-to-r ${rateColor} rounded-[28px] p-6 text-white shadow-lg`}>
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                        <CheckCircle2 size={22} className="opacity-90"/>
+                        <span className="font-black text-base">이번 주 과제 완수율</span>
+                    </div>
+                    <span className="text-white/70 text-xs font-bold bg-white/20 px-3 py-1 rounded-full">
+                        오늘 기준
+                    </span>
+                </div>
+                {thisWeekStats.rate !== null ? (
+                    <>
+                        <div className="flex items-baseline gap-2 mb-3">
+                            <span className="text-5xl font-black">{thisWeekStats.rate}</span>
+                            <span className="text-2xl font-bold opacity-80">%</span>
+                            <span className="text-sm font-bold opacity-70 ml-1">
+                                ({thisWeekStats.total}개 중 {thisWeekStats.done}개 완료)
+                            </span>
+                        </div>
+                        <div className="h-3 w-full bg-white/30 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-white rounded-full transition-all duration-1000"
+                                style={{ width: `${thisWeekStats.rate}%` }}
+                            />
+                        </div>
+                        <p className="text-xs font-bold mt-2 opacity-80">
+                            {thisWeekStats.rate >= 80 ? '🎉 이번 주도 정말 잘하고 있어요!' :
+                             thisWeekStats.rate >= 50 ? '⚡ 조금만 더 힘내봐요!' :
+                             '💪 오늘부터 다시 시작해 봐요!'}
+                        </p>
+                    </>
+                ) : (
+                    <p className="text-white/80 font-bold text-sm mt-1">이번 주 등록된 과제가 아직 없어요.</p>
+                )}
+            </div>
+
+        <div className="bg-white p-8 rounded-[32px] shadow-xl border-t-8 border-violet-400">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                 <h2 className="text-3xl font-black flex items-center gap-3 text-slate-800">
                     <BrainCircuit className="text-violet-500" size={36}/> 성찰 일지
@@ -101,6 +162,7 @@ export default function ReflectionJournal({ dailyPlans, setDailyPlans }) {
                     </div>
                 </div>
             )}
+        </div>
         </div>
     );
 }

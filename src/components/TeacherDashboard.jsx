@@ -127,6 +127,22 @@ export default function TeacherDashboard() {
         }
     };
 
+    // 학생 강제 탈퇴 (사용자 삭제)
+    const handleDeleteStudent = async (e, studentId, studentName) => {
+        e.stopPropagation();
+        if (!window.confirm(`정말 '${studentName || '이름없음'}' 학생을 강제 탈퇴시키겠습니까?\n이 작업은 되돌릴 수 없습니다!`)) return;
+        
+        try {
+            await deleteDoc(doc(db, 'users', studentId));
+            if (selectedStudent?.id === studentId) {
+                setSelectedStudent(null);
+            }
+        } catch (error) {
+            console.error('학생 삭제 중 오류 발생:', error);
+            alert('삭제에 실패했습니다. 권한이 부족할 수 있습니다.');
+        }
+    };
+
     // Fetch details when a student is selected
     useEffect(() => {
         if (!selectedStudent) return;
@@ -316,10 +332,10 @@ export default function TeacherDashboard() {
                 
                 <div className="flex-1 overflow-y-auto space-y-2 pr-2">
                     {students.map(s => (
-                        <button 
+                        <div 
                             key={s.id} 
                             onClick={() => setSelectedStudent(s)}
-                            className={`w-full text-left p-4 rounded-2xl transition-all border flex items-center gap-3 ${selectedStudent?.id === s.id ? 'bg-rose-50 border-rose-200 shadow-sm' : 'border-transparent hover:bg-slate-50'}`}
+                            className={`w-full text-left p-4 rounded-2xl transition-all border flex items-center gap-3 cursor-pointer ${selectedStudent?.id === s.id ? 'bg-rose-50 border-rose-200 shadow-sm' : 'border-transparent hover:bg-slate-50'}`}
                         >
                             {s.photoURL ? (
                                 <img src={s.photoURL} className="w-10 h-10 rounded-xl" alt="profile" />
@@ -332,8 +348,15 @@ export default function TeacherDashboard() {
                                 <h3 className={`font-black truncate ${selectedStudent?.id === s.id ? 'text-rose-700' : 'text-slate-700'}`}>{s.displayName}</h3>
                                 <p className="text-xs text-slate-400 truncate">{s.email || '이메일 없음'}</p>
                             </div>
+                            <button 
+                                onClick={(e) => handleDeleteStudent(e, s.id, s.displayName)} 
+                                className="p-2 rounded-xl text-slate-300 hover:bg-red-50 hover:text-red-500 transition-colors"
+                                title="학생 삭제"
+                            >
+                                <Trash2 size={16} />
+                            </button>
                             <ChevronRight size={18} className={selectedStudent?.id === s.id ? 'text-rose-400' : 'text-slate-300'}/>
-                        </button>
+                        </div>
                     ))}
                     {students.length === 0 && <p className="text-center text-slate-400 font-bold py-10">가입된 학생이 없습니다.</p>}
                 </div>

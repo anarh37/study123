@@ -61,7 +61,7 @@ export function useFirestore(uid, key, initialValue) {
       if (uid) {
         try {
           const docRef = doc(db, 'users', uid, 'plannerData', key);
-          await setDoc(docRef, { value: valueToStore }, { merge: true });
+          await setDoc(docRef, { value: valueToStore });
         } catch (error) {
           console.error("Firestore save error:", error);
         } finally {

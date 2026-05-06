@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { db } from '../firebase';
 import { collection, query, onSnapshot, getDoc, doc, deleteDoc, setDoc, getDocs } from 'firebase/firestore';
-import { Users, FileText, Activity, PieChart, CheckCircle2, TrendingUp, AlertTriangle, ChevronRight, ChevronLeft, Trophy, RefreshCcw, X, BarChart2, Calendar, CalendarCheck } from 'lucide-react';
+import { Users, FileText, Activity, PieChart, CheckCircle2, TrendingUp, AlertTriangle, ChevronRight, ChevronLeft, Trophy, RefreshCcw, X, BarChart2, Calendar, CalendarCheck, Trash2 } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { getStartOfWeek, getTodayDateString } from '../utils/constants';
 

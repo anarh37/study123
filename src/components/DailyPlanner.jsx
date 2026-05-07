@@ -297,30 +297,30 @@ export default function DailyPlanner({ dailyPlans, setDailyPlans, userProfile, f
                                     {t.startTime && t.status === 'pending' && <span className="text-xs font-bold text-slate-400 mt-1">🕒 {t.startTime} 시작 · {t.duration}분</span>}
                                     {!t.startTime && t.status === 'pending' && <span className="text-xs font-bold text-slate-400 mt-1">⏱ 예상 {t.duration}분</span>}
                                 </div>
-                                <div className="flex flex-wrap gap-2">
+                                <div className="flex items-center gap-1.5 sm:gap-2 w-full overflow-x-auto no-scrollbar pb-1 sm:pb-0">
                                     {/* 컨트롤 패널 */}
                                     {t.status !== 'done' && (
-                                        <button onClick={()=>handleDoneClick(t)} className="flex items-center gap-1 px-3 py-2 bg-white text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all rounded-xl border border-emerald-100 shadow-sm font-bold text-sm">
-                                            <CheckCircle size={18}/> 끝냄
+                                        <button onClick={()=>handleDoneClick(t)} className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 bg-white text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all rounded-xl border border-emerald-100 shadow-sm font-bold text-[11px] sm:text-sm shrink-0 whitespace-nowrap">
+                                            <CheckCircle className="w-3.5 h-3.5 sm:w-[18px] sm:h-[18px]"/> 끝냄
                                         </button>
                                     )}
                                     {t.status !== 'postponed' && (
-                                        <button onClick={()=>updateStatus(t.id, 'postponed')} className="flex items-center gap-1 px-2 py-2 bg-white text-amber-500 hover:bg-amber-500 hover:text-white transition-all rounded-xl border border-amber-100 shadow-sm font-bold text-sm">
-                                            <ArrowRightCircle size={18}/> 미룸
+                                        <button onClick={()=>updateStatus(t.id, 'postponed')} className="flex items-center gap-1 px-2.5 sm:px-2 py-1.5 sm:py-2 bg-white text-amber-500 hover:bg-amber-500 hover:text-white transition-all rounded-xl border border-amber-100 shadow-sm font-bold text-[11px] sm:text-sm shrink-0 whitespace-nowrap">
+                                            <ArrowRightCircle className="w-3.5 h-3.5 sm:w-[18px] sm:h-[18px]"/> 미룸
                                         </button>
                                     )}
                                     {t.status !== 'failed' && (
-                                        <button onClick={()=>updateStatus(t.id, 'failed')} className="flex items-center gap-1 px-2 py-2 bg-white text-slate-400 hover:bg-slate-500 hover:text-white transition-all rounded-xl border border-slate-100 shadow-sm font-bold text-sm">
-                                            <XCircle size={18}/> 못함
+                                        <button onClick={()=>updateStatus(t.id, 'failed')} className="flex items-center gap-1 px-2.5 sm:px-2 py-1.5 sm:py-2 bg-white text-slate-400 hover:bg-slate-500 hover:text-white transition-all rounded-xl border border-slate-100 shadow-sm font-bold text-[11px] sm:text-sm shrink-0 whitespace-nowrap">
+                                            <XCircle className="w-3.5 h-3.5 sm:w-[18px] sm:h-[18px]"/> 못함
                                         </button>
                                     )}
                                     {t.status === 'pending' && (
-                                        <button onClick={()=>openEditModal(t)} className="flex items-center gap-1 px-2 py-2 bg-white text-violet-400 hover:bg-violet-500 hover:text-white transition-all rounded-xl border border-violet-100 shadow-sm font-bold text-sm">
-                                            <Pencil size={16}/> 수정
+                                        <button onClick={()=>openEditModal(t)} className="flex items-center gap-1 px-2.5 sm:px-2 py-1.5 sm:py-2 bg-white text-violet-400 hover:bg-violet-500 hover:text-white transition-all rounded-xl border border-violet-100 shadow-sm font-bold text-[11px] sm:text-sm shrink-0 whitespace-nowrap">
+                                            <Pencil className="w-3.5 h-3.5 sm:w-[16px] sm:h-[16px]"/> 수정
                                         </button>
                                     )}
-                                    <button onClick={()=>remove(t.id)} className="p-2 ml-1 bg-white text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all rounded-xl border border-slate-100 shadow-sm">
-                                        <Trash2 size={18}/>
+                                    <button onClick={()=>remove(t.id)} className="p-1.5 sm:p-2 ml-auto sm:ml-1 bg-white text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all rounded-xl border border-slate-100 shadow-sm shrink-0">
+                                        <Trash2 className="w-4 h-4 sm:w-[18px] sm:h-[18px]"/>
                                     </button>
                                 </div>
                             </div>

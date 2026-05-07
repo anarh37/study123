@@ -128,7 +128,7 @@ export default function ReflectionJournal({ dailyPlans, setDailyPlans }) {
                 <div className="space-y-6 sm:space-y-8 mt-4">
                     <div className="bg-violet-50 p-4 sm:p-6 rounded-2xl border border-violet-100">
                         <label className="block text-sm font-black text-violet-700 mb-4">🌈 오늘 나의 기분 보석은?</label>
-                        <div className="flex justify-between gap-1 sm:gap-2">
+                        <div className="grid grid-cols-5 gap-1 sm:gap-2 place-items-center">
                             {[
                                 { emoji: '😆', label: '신나요' },
                                 { emoji: '😊', label: '기뻐요' },
@@ -145,15 +145,15 @@ export default function ReflectionJournal({ dailyPlans, setDailyPlans }) {
                     </div>
                     <div>
                         <label className="block text-sm font-black text-slate-700 mb-3">⭐ 오늘 나에게 주는 칭찬 (노력 점수)</label>
-                        <div className="flex gap-2 sm:gap-3">
+                        <div className="flex justify-between items-center w-full px-2 sm:px-6">
                             {[1, 2, 3, 4, 5].map(n => (
-                                <button key={n} onClick={() => update('rating', n)} className="text-3xl transition-transform hover:scale-110 sm:hover:scale-125">
+                                <button key={n} onClick={() => update('rating', n)} className="transition-transform hover:scale-110 sm:hover:scale-125">
                                     {(reflection.rating || 0) >= n ? (
-                                        <svg width="36" height="36" viewBox="0 0 24 24" fill="#fbbf24" stroke="#f59e0b" strokeWidth="1">
+                                        <svg className="w-11 h-11 sm:w-14 sm:h-14" viewBox="0 0 24 24" fill="#fbbf24" stroke="#f59e0b" strokeWidth="1">
                                             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                                         </svg>
                                     ) : (
-                                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5">
+                                        <svg className="w-11 h-11 sm:w-14 sm:h-14" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5">
                                             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                                         </svg>
                                     )}

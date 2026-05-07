@@ -38,6 +38,10 @@ export function useFirestore(uid, key, initialValue) {
         setStoredValue(initialValue);
       }
       setIsReady(true);
+    }, (error) => {
+      console.error(`Firestore 구독 오류 (${key}):`, error);
+      // 권한 오류나 할당량 초과 시에도 무한 로딩에 빠지지 않도록 처리
+      setIsReady(true);
     });
 
     return () => unsubscribe();
